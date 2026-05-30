@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/features/auth/server/authConfig";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication

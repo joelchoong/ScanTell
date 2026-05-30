@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google";
 import Nodemailer from "next-auth/providers/nodemailer";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/shared/server/db";
 
 // ⚠️ DEV ONLY — remove this block before going to production
 const devBypassProvider = Credentials({

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/features/auth/server/authConfig";
 import { redirect } from "next/navigation";
 
 export default async function RootPage() {
