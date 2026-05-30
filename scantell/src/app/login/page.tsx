@@ -101,6 +101,38 @@ export default function LoginPage({
           <p className="text-center text-xs text-gray-400">
             We&apos;ll send a sign-in link to your email — no password needed.
           </p>
+
+          {/* ⚠️ DEV ONLY — remove this block before production */}
+          {process.env.NODE_ENV !== "production" && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-dashed border-yellow-300" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-3 bg-white text-yellow-500 font-medium">
+                    dev only
+                  </span>
+                </div>
+              </div>
+
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("dev-bypass", { redirectTo: callbackUrl });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-yellow-400 rounded-xl text-sm font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                >
+                  <span>⚠️</span>
+                  Bypass login (dev only)
+                </button>
+              </form>
+            </>
+          )}
+          {/* ⚠️ END DEV ONLY */}
         </div>
       </div>
     </div>
