@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ScanTell",
   description: "ScanTell web app",
+  icons: {
+    icon: "/scantell.svg",
+  },
 };
 
 export default function RootLayout({

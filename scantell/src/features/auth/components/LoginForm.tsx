@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { GoogleSignIn } from "./GoogleSignIn";
 import { MagicLinkForm } from "./MagicLinkForm";
 import { DevBypass } from "./DevBypass";
@@ -13,8 +14,14 @@ export function LoginForm({
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         {/* Logo / Brand */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">ScanTell</h1>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <Image
+            src="/scantell-logo.svg"
+            alt="ScanTell"
+            width={180}
+            height={180}
+            priority
+          />
           <p className="mt-2 text-gray-500">Sign in to your account</p>
         </div>
 
