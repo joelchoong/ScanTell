@@ -1,0 +1,36 @@
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
+
+// Routes that require authentication
+const protectedRoutes = ["/dashboard"];
+
+// Routes only for unauthenticated users
+const authRoutes = ["/login", "/verify-request", "/auth-error"];
+
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    nextUrl.pathname.startsWith(route)
+  );
+  const isAuthRoute = authRoutes.some((route) =>
+    nextUrl.pathname.startsWith(route)
+  );
+
+  // Redirect unauthenticated users away from protected routes
+  if (isProtectedRoute && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", nextUrl));
+  }
+
+  // Redirect authenticated users away from auth routes
+  if (isAuthRoute && isLoggedIn) {
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
+  }
+
+  return NextResponse.next();
+});
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
