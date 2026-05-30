@@ -11,7 +11,7 @@ export function LoginForm({
   const callbackUrl = searchParams.callbackUrl ?? "/dashboard";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center softui-bg px-4">
       <div className="w-full max-w-md">
         {/* Logo / Brand */}
         <div className="text-center mb-8 flex flex-col items-center">
@@ -22,10 +22,10 @@ export function LoginForm({
             height={180}
             priority
           />
-          <p className="mt-2 text-gray-500">Sign in to your account</p>
+          <p className="mt-2 text-[#5a5a6a]">Sign in to your account</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 space-y-6">
+        <div className="softui-card p-8 space-y-6">
           {/* Error message */}
           {searchParams.error && (
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">

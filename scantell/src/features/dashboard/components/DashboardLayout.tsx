@@ -1,5 +1,6 @@
 import { TopHeader } from "./TopHeader";
-import { BottomNav } from "./BottomNav";
+import { BottomNav } from "@/features/navigation/components/BottomNav";
+import { colors } from "@/lib/design-system";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -8,12 +9,12 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, userImage }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-white text-gray-900 pb-28 font-sans selection:bg-yellow-100">
-      <div className="max-w-md mx-auto relative min-h-screen">
+    <div className="text-gray-900 pb-28 font-sans selection:bg-yellow-100" style={{ background: colors.primary.gradientTransparent }}>
+      <div className="max-w-md mx-auto relative h-screen flex flex-col">
         <TopHeader userImage={userImage} />
 
         {/* Content */}
-        <main className="px-6">
+        <main className="px-6 overflow-y-auto flex-1">
           {children}
         </main>
 

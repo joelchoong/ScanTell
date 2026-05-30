@@ -1,22 +1,27 @@
+import Image from "next/image";
+import { colors } from "@/lib/design-system";
+
 export function HeroCard() {
   return (
-    <div className="bg-[#1a1917] rounded-[2rem] p-7 relative overflow-hidden shadow-sm">
-      {/* Decorative circle */}
-      <div className="absolute -bottom-16 -right-16 w-[280px] h-[280px] bg-[#3a3528] rounded-full opacity-60"></div>
-      
-      <div className="relative z-10">
-        <p className="text-[11px] font-bold tracking-[0.15em] text-[#8a867c] uppercase mb-4">
-          AI Document Intelligence
-        </p>
-        <h1 className="text-[32px] font-bold text-white leading-[1.1] mb-6 tracking-tight">
-          Scan any doc,<br />
-          see its <span className="text-[#fbc02d]">future</span>
+    <div className="rounded-[2rem] p-7 relative overflow-hidden shadow-sm min-h-[300px]" style={{ backgroundColor: colors.background.dark }}>
+      {/* Header at top left */}
+      <div className="relative z-10 text-left mb-4">
+        <h1 className="text-[24px] font-bold text-white leading-[1.3] tracking-wide">
+          Scan any document,<br />
+          see its <span style={{ color: colors.primary.base }}>future</span>
         </h1>
-        
-        <button className="bg-[#fbc02d] hover:bg-[#f9b000] transition-colors text-black font-semibold text-[15px] px-5 py-3 rounded-full flex items-center gap-2.5">
-          <div className="w-2 h-2 bg-black rounded-full"></div>
-          Scan a document
-        </button>
+      </div>
+
+      {/* GIF in bottom right */}
+      <div className="absolute -bottom-20 -right-20 w-[360px] h-[360px]">
+        <Image
+          src="/d58c8fc0-57db-4f9e-a540-00005f49f693.gif"
+          alt="Scanning animation"
+          width={360}
+          height={360}
+          className="w-full h-full object-contain"
+          unoptimized
+        />
       </div>
     </div>
   );
