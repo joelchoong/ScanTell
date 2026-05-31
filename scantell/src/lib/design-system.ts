@@ -41,6 +41,25 @@ export const colors = {
   },
 };
 
+// Typography Scale
+// Use these consistently across all components
+export const typography = {
+  // Hero title — large card headlines
+  heroTitle: 'text-2xl font-bold leading-snug tracking-wide',       // 24px
+  // Section headers — "Recent Scans", "Simulate what happens"
+  sectionHeader: 'text-base font-semibold',                          // 16px
+  // Card body / list item primary label
+  bodyPrimary: 'text-sm font-medium',                                // 14px
+  // Card body / list item secondary / descriptions
+  bodySecondary: 'text-sm font-normal',                              // 14px
+  // Button label
+  button: 'text-sm font-semibold',                                   // 14px
+  // Meta / timestamps / tags / captions
+  caption: 'text-xs font-normal',                                    // 12px
+  // Uppercase label tags (e.g. PREDICTION, OPPORTUNITY)
+  label: 'text-[11px] font-bold tracking-widest uppercase',          // 11px
+};
+
 // CSS utility classes for common design patterns
 export const designClasses = {
   softuiCard: 'softui-card',

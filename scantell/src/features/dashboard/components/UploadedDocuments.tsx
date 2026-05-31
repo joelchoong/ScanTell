@@ -1,5 +1,5 @@
 import { FileText, Calendar, MoreVertical } from "lucide-react";
-import { colors } from "@/lib/design-system";
+import { colors, typography } from "@/lib/design-system";
 
 interface Document {
   id: string;
@@ -23,13 +23,13 @@ export function UploadedDocuments() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Uploaded Documents</h2>
+      <h2 className={`${typography.sectionHeader} text-gray-900`}>Recent Scans</h2>
 
       <div className="space-y-3">
         {documents.length === 0 ? (
           <div className="softui-card p-8 text-center">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">No documents uploaded yet</p>
+            <p className={`${typography.bodySecondary} text-gray-500`}>No scans yet</p>
           </div>
         ) : (
           documents.map((doc) => (
@@ -39,12 +39,12 @@ export function UploadedDocuments() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-gray-900 truncate">
+                <h3 className={`${typography.bodyPrimary} text-gray-900 truncate`}>
                   {doc.name}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-3 h-3 text-gray-400" />
-                  <p className="text-xs text-gray-500">{doc.date}</p>
+                  <p className={`${typography.caption} text-gray-500`}>{doc.date}</p>
                 </div>
               </div>
 
