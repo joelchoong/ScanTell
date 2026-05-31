@@ -89,10 +89,7 @@ export function ScanView() {
             >
               <p className="text-sm">{message.content}</p>
               <p className="text-[10px] mt-1 opacity-60">
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {message.timestamp.getHours().toString().padStart(2, '0')}:{message.timestamp.getMinutes().toString().padStart(2, '0')}
               </p>
             </div>
             {message.role === "user" && (

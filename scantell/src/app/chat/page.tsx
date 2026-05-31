@@ -4,6 +4,7 @@ import { ScanView } from "@/features/scan/components/ScanView";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { colors } from "@/lib/design-system";
+import Image from "next/image";
 
 export default async function ScanPage() {
   const session = await auth();
@@ -13,8 +14,19 @@ export default async function ScanPage() {
   }
 
   return (
-    <div className="text-gray-900 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.solid }}>
-      <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: colors.primary.gradientTransparent }}>
+    <div className="text-gray-900 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.gradientTransparent }}>
+      {/* S-curve pattern at top */}
+      <div className="absolute top-0 left-0 right-0 w-full h-[40vh] z-0 pointer-events-none">
+        <Image
+          src="/wave-pattern.svg"
+          alt="S-curve pattern"
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
+
+      <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: 'transparent' }}>
         {/* Header with back button */}
         <div className="flex items-center px-6 py-4 sticky top-0 z-20">
           <Link href="/dashboard" className="w-10 h-10 softui-card flex items-center justify-center">

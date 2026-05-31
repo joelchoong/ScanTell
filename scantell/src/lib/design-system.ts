@@ -9,7 +9,8 @@ export const colors = {
     dark: '#D49800',
     solid: '#FCE3B4',
     gradient: 'linear-gradient(180deg, #FAD381 0%, #FCE3B4 100%)',
-    gradientTransparent: 'linear-gradient(180deg, rgba(250,211,129,0.25) 0%, rgba(252,227,180,0.08) 35%, #f0f0f3 35%)',
+    gradientTransparent: '#f0f0f3',
+    sCurvePattern: '/wave-pattern.svg',
     rgba: {
       25: 'rgba(245,179,1,0.25)',
       15: 'rgba(245,179,1,0.15)',
