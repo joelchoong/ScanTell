@@ -11,10 +11,16 @@
   --inset-sm: inset 2px 2px 5px #c8c8d0, inset -2px -2px 5px #ffffff;
 }
 
-html,
-body {
-  background: linear-gradient(180deg, rgba(245,179,1,0.25) 0%, rgba(245,179,1,0.08) 35%, var(--bg) 35%);
+html {
+  background: #FCE3B4;
   min-height: 100vh;
+}
+
+body {
+  background: #FCE3B4;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .softui-bg {

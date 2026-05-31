@@ -9,8 +9,8 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, userImage }: DashboardLayoutProps) {
   return (
-    <div className="text-gray-900 pb-28 font-sans selection:bg-yellow-100" style={{ background: colors.primary.gradientTransparent }}>
-      <div className="max-w-md mx-auto relative h-screen flex flex-col">
+    <div className="text-gray-900 pb-28 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.solid }}>
+      <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: colors.primary.gradientTransparent }}>
         <TopHeader userImage={userImage} />
 
         {/* Content */}
