@@ -5,10 +5,9 @@ import Image from "next/image";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  userImage?: string | null;
 }
 
-export function DashboardLayout({ children, userImage }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="text-gray-900 pb-28 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.gradientTransparent }}>
       {/* S-curve pattern at top */}
@@ -23,7 +22,7 @@ export function DashboardLayout({ children, userImage }: DashboardLayoutProps) {
       </div>
 
       <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: 'transparent' }}>
-        <TopHeader userImage={userImage} />
+        <TopHeader />
 
         {/* Content */}
         <main className="px-6 overflow-y-auto flex-1">

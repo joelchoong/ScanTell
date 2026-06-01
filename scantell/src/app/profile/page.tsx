@@ -27,7 +27,7 @@ export default async function ProfilePage() {
       </div>
 
       <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: 'transparent' }}>
-        <TopHeader userImage={session.user.image} />
+        <TopHeader />
         <div className="px-6 overflow-y-auto flex-1">
           <ProfileView user={session.user} />
         </div>

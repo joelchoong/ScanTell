@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MessageCircle, User } from "lucide-react";
+import { Home, Split, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { colors } from "@/lib/design-system";
@@ -23,12 +23,12 @@ export function BottomNav() {
           <span className={`text-[10px] font-medium ${isActive("/dashboard") ? "" : "text-[#5a5a6a]"}`} style={{ color: isActive("/dashboard") ? colors.primary.base : undefined }}>Home</span>
         </Link>
 
-        {/* Chat - Center button */}
-        <Link href="/chat" className="flex flex-col items-center gap-1">
+        {/* Explore - Center button */}
+        <Link href="/explore" className="flex flex-col items-center gap-1">
           <div className="w-12 h-12 rounded-full flex items-center justify-center -mt-6 border-4" style={{ backgroundColor: colors.primary.base, boxShadow: colors.shadows.gold, borderColor: colors.background.base }}>
-            <MessageCircle className="w-6 h-6" strokeWidth={2} style={{ color: colors.text.primary }} />
+            <Split className="w-6 h-6" strokeWidth={2} style={{ color: colors.text.primary }} />
           </div>
-          <span className="text-[10px] font-medium text-[#5a5a6a]">Chat</span>
+          <span className="text-[10px] font-medium text-[#5a5a6a]">Explore</span>
         </Link>
 
         {/* Profile */}

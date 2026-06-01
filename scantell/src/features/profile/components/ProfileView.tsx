@@ -1,5 +1,6 @@
 import { User, Mail, LogOut, ChevronRight, HelpCircle, Shield } from "lucide-react";
 import { signOut } from "@/features/auth/server/authConfig";
+import Image from "next/image";
 
 interface ProfileViewProps {
   user: {
@@ -16,9 +17,12 @@ export function ProfileView({ user }: ProfileViewProps) {
       <div className="softui-card p-6">
         <div className="flex items-center gap-4">
           {user.image ? (
-            <img
+            <Image
               src={user.image}
               alt={user.name || "User"}
+              width={64}
+              height={64}
+              unoptimized
               className="w-16 h-16 rounded-full object-cover"
             />
           ) : (

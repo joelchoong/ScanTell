@@ -1,7 +1,5 @@
 import { HeroCard } from "./HeroCard";
 import { UploadedDocuments } from "./UploadedDocuments";
-import { colors, typography } from "@/lib/design-system";
-import { Plus } from "lucide-react";
 
 export function DashboardView() {
   return (

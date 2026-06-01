@@ -1,9 +1,9 @@
 import { LoginForm } from "@/features/auth/components/LoginForm";
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string; callbackUrl?: string };
+  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
-  return <LoginForm searchParams={searchParams} />;
+  return <LoginForm searchParams={await searchParams} />;
 }

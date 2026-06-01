@@ -13,9 +13,5 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  return (
-    <DashboardLayoutComponent userImage={session.user.image}>
-      {children}
-    </DashboardLayoutComponent>
-  );
+  return <DashboardLayoutComponent>{children}</DashboardLayoutComponent>;
 }
