@@ -17,7 +17,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           alt="S-curve pattern"
           fill
           className="object-cover"
-          priority
         />
       </div>
 
@@ -25,7 +24,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <TopHeader />
 
         {/* Content */}
-        <main className="px-6 overflow-y-auto flex-1">
+        <main className="px-6 overflow-y-auto flex-1 page-transition">
           {children}
         </main>
 

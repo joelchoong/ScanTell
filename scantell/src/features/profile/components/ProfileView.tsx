@@ -1,22 +1,55 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { User, Mail, LogOut, ChevronRight, HelpCircle, Shield } from "lucide-react";
-import { signOut } from "@/features/auth/server/authConfig";
+import { signOutAction } from "./signOutAction";
 import Image from "next/image";
 
-interface ProfileViewProps {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
+interface User {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
 }
 
-export function ProfileView({ user }: ProfileViewProps) {
+export function ProfileView() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch user data client-side
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        setUser(data.user);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto px-6 space-y-6 pt-2">
+        <div className="softui-card p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto px-6 space-y-6 pt-2">
       {/* Profile Header */}
       <div className="softui-card p-6">
         <div className="flex items-center gap-4">
-          {user.image ? (
+          {user?.image ? (
             <Image
               src={user.image}
               alt={user.name || "User"}
@@ -32,9 +65,9 @@ export function ProfileView({ user }: ProfileViewProps) {
           )}
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {user.name || "User"}
+              {user?.name || "User"}
             </h2>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
         </div>
       </div>
@@ -87,12 +120,7 @@ export function ProfileView({ user }: ProfileViewProps) {
 
       {/* Logout */}
       <section>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
+        <form action={signOutAction}>
           <button
             type="submit"
             className="w-full softui-btn-danger flex items-center justify-center gap-2"

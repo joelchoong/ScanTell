@@ -1,18 +1,10 @@
-import { auth } from "@/features/auth/server/authConfig";
-import { redirect } from "next/navigation";
 import { ScanView } from "@/features/scan/components/ScanView";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { colors } from "@/lib/design-system";
 import Image from "next/image";
 
-export default async function ScanPage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+export default function ScanPage() {
   return (
     <div className="text-gray-900 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.gradientTransparent }}>
       {/* S-curve pattern at top */}
@@ -22,7 +14,6 @@ export default async function ScanPage() {
           alt="S-curve pattern"
           fill
           className="object-cover"
-          priority
         />
       </div>
 
@@ -37,7 +28,7 @@ export default async function ScanPage() {
         </div>
 
         {/* Chat content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto page-transition">
           <ScanView />
         </div>
       </div>

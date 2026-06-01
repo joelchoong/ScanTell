@@ -1,11 +1,12 @@
 "use client";
 
+import { memo } from "react";
 import { Home, Split, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { colors } from "@/lib/design-system";
 
-export function BottomNav() {
+function BottomNavComponent() {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
@@ -44,3 +45,5 @@ export function BottomNav() {
     </div>
   );
 }
+
+export const BottomNav = memo(BottomNavComponent);

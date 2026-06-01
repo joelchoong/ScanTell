@@ -1,18 +1,10 @@
-import { auth } from "@/features/auth/server/authConfig";
-import { redirect } from "next/navigation";
 import { ProfileView } from "@/features/profile/components/ProfileView";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors } from "@/lib/design-system";
 import Image from "next/image";
 
-export default async function ProfilePage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+export default function ProfilePage() {
   return (
     <div className="text-gray-900 pb-28 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.gradientTransparent }}>
       {/* S-curve pattern at top */}
@@ -22,14 +14,13 @@ export default async function ProfilePage() {
           alt="S-curve pattern"
           fill
           className="object-cover"
-          priority
         />
       </div>
 
       <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: 'transparent' }}>
         <TopHeader />
-        <div className="px-6 overflow-y-auto flex-1">
-          <ProfileView user={session.user} />
+        <div className="px-6 overflow-y-auto flex-1 page-transition">
+          <ProfileView />
         </div>
         <BottomNav />
       </div>

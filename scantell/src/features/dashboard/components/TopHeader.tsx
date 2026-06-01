@@ -1,7 +1,8 @@
+import { memo } from "react";
 import Image from "next/image";
 import { colors } from "@/lib/design-system";
 
-export function TopHeader() {
+function TopHeaderComponent() {
   return (
     <header className="flex items-center justify-center px-6 py-5 sticky top-0 z-20" style={{ background: colors.primary.solid }}>
       <div className="flex items-center gap-2.5">
@@ -16,3 +17,5 @@ export function TopHeader() {
     </header>
   );
 }
+
+export const TopHeader = memo(TopHeaderComponent);

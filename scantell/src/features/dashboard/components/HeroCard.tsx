@@ -1,11 +1,20 @@
 "use client";
 
+import { memo, useState, useEffect } from "react";
 import Lottie from "lottie-react";
-import lottieAnimation from "../../../../public/lottie.json";
 import { colors, typography } from "@/lib/design-system";
 import { ArrowRight } from "lucide-react";
 
-export function HeroCard() {
+function HeroCardComponent() {
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    // Lazy load the Lottie animation
+    import("../../../../public/lottie.json").then((module) => {
+      setAnimationData(module.default);
+    });
+  }, []);
+
   return (
       <div
         className="rounded-[2rem] p-8 relative overflow-hidden shadow-sm min-h-[420px] flex flex-col"
@@ -21,12 +30,14 @@ export function HeroCard() {
 
       {/* Lottie animation middle right */}
       <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[300px] h-[300px]">
-        <Lottie
-          animationData={lottieAnimation}
-          loop
-          autoplay
-          style={{ width: "100%", height: "100%" }}
-        />
+        {animationData && (
+          <Lottie
+            animationData={animationData}
+            loop
+            autoplay
+            style={{ width: "100%", height: "100%" }}
+          />
+        )}
       </div>
 
       {/* CTA Button below animation */}
@@ -44,3 +55,5 @@ export function HeroCard() {
     </div>
   );
 }
+
+export const HeroCard = memo(HeroCardComponent);

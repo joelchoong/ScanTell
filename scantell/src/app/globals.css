@@ -23,6 +23,22 @@ body {
   padding: 0;
 }
 
+/* Page transition animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fadeInUp 0.3s ease-out;
+}
+
 .softui-bg {
   background: transparent;
 }
