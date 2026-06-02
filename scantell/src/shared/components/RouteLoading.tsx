@@ -1,11 +1,9 @@
 export function RouteLoading() {
   return (
-    <div className="space-y-6 pt-1">
-      <div className="rounded-[2rem] h-[213px] animate-pulse" style={{ backgroundColor: "#f0f0f3" }} />
-      <div className="space-y-3">
-        <div className="h-4 w-28 rounded-full animate-pulse" style={{ backgroundColor: "#dedee4" }} />
-        <div className="h-20 rounded-[1.5rem] animate-pulse" style={{ backgroundColor: "#f0f0f3" }} />
-        <div className="h-20 rounded-[1.5rem] animate-pulse" style={{ backgroundColor: "#f0f0f3" }} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#f0f0f3]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 rounded-full border-4 border-[#F5B301] border-t-transparent animate-spin" />
+        <p className="text-sm text-gray-500">Loading...</p>
       </div>
     </div>
   );
