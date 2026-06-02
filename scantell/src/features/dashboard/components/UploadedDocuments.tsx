@@ -1,4 +1,7 @@
-import { FileText, Calendar, MoreVertical } from "lucide-react";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { FileText, Calendar, MoreVertical, Eye, Pencil, Trash2 } from "lucide-react";
 import { colors, typography } from "@/lib/design-system";
 
 interface Document {
@@ -8,6 +11,9 @@ interface Document {
 }
 
 export function UploadedDocuments() {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
   const documents: Document[] = [
     {
       id: "1",
@@ -20,6 +26,39 @@ export function UploadedDocuments() {
       date: "May 29, 2026",
     },
   ];
+
+  const toggleMenu = (id: string) => {
+    setOpenMenuId(openMenuId === id ? null : id);
+  };
+
+  const handleView = (doc: Document) => {
+    console.log("View document:", doc.name);
+    setOpenMenuId(null);
+  };
+
+  const handleRename = (doc: Document) => {
+    console.log("Rename document:", doc.name);
+    setOpenMenuId(null);
+  };
+
+  const handleDelete = (doc: Document) => {
+    console.log("Delete document:", doc.name);
+    setOpenMenuId(null);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId]?.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   return (
     <div className="space-y-4">
@@ -48,9 +87,39 @@ export function UploadedDocuments() {
                 </div>
               </div>
 
-              <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow">
-                <MoreVertical className="w-4 h-4 text-gray-500" />
-              </button>
+              <div className="relative" ref={(el) => { menuRefs.current[doc.id] = el; }}>
+                <button
+                  onClick={() => toggleMenu(doc.id)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
+                >
+                  <MoreVertical className="w-4 h-4 text-gray-500" />
+                </button>
+                {openMenuId === doc.id && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50 w-40">
+                    <button
+                      onClick={() => handleView(doc)}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Eye className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">View</span>
+                    </button>
+                    <button
+                      onClick={() => handleRename(doc)}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Pencil className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">Rename</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(doc)}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-200"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <span className="text-sm text-red-600">Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}

@@ -26,10 +26,12 @@ function BottomNavComponent() {
 
         {/* Explore - Center button */}
         <Link href="/explore" className="flex flex-col items-center gap-1">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center -mt-6 border-4" style={{ backgroundColor: colors.primary.base, boxShadow: colors.shadows.gold, borderColor: colors.background.base }}>
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center -mt-6 border-4 transition-all ${
+            isActive("/explore") ? "ring-2 ring-yellow-400 ring-offset-2" : ""
+          }`} style={{ backgroundColor: colors.primary.base, boxShadow: colors.shadows.gold, borderColor: colors.background.base }}>
             <Split className="w-6 h-6" strokeWidth={2} style={{ color: colors.text.primary }} />
           </div>
-          <span className="text-[10px] font-medium text-[#5a5a6a]">Explore</span>
+          <span className={`text-[10px] font-medium ${isActive("/explore") ? "" : "text-[#5a5a6a]"}`} style={{ color: isActive("/explore") ? colors.primary.base : undefined }}>Explore</span>
         </Link>
 
         {/* Profile */}

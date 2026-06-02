@@ -3,7 +3,7 @@
 import { memo, useState, useEffect } from "react";
 import Lottie from "lottie-react";
 import { colors, typography } from "@/lib/design-system";
-import { ArrowRight } from "lucide-react";
+import { Upload } from "lucide-react";
 
 function HeroCardComponent() {
   const [animationData, setAnimationData] = useState<any>(null);
@@ -49,7 +49,7 @@ function HeroCardComponent() {
             boxShadow: colors.shadows.gold
           }}
         >
-          Simulate what happens <ArrowRight className="w-4 h-4 ml-2" />
+          <Upload className="w-4 h-4 mr-2" /> Upload documents
         </button>
       </div>
     </div>
