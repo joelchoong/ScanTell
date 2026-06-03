@@ -3,47 +3,91 @@
 import { useState, useRef, useEffect } from "react";
 import { FileText, Calendar, MoreVertical, Eye, Pencil, Trash2 } from "lucide-react";
 import { colors, typography } from "@/lib/design-system";
-
-interface Document {
-  id: string;
-  name: string;
-  date: string;
-}
+import { useRouter } from "next/navigation";
+import { documentsService, Document } from "@/lib/services/documentsService";
 
 export function UploadedDocuments() {
+  const router = useRouter();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [newName, setNewName] = useState('');
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  const documents: Document[] = [
-    {
-      id: "1",
-      name: "Contract_Agreement.pdf",
-      date: "May 30, 2026",
-    },
-    {
-      id: "2",
-      name: "Invoice_2024.pdf",
-      date: "May 29, 2026",
-    },
-  ];
+  // Load documents from service
+  useEffect(() => {
+    documentsService.getAll().then(docs => {
+      setDocuments(docs);
+      setLoading(false);
+    });
+  }, []);
 
   const toggleMenu = (id: string) => {
     setOpenMenuId(openMenuId === id ? null : id);
   };
 
   const handleView = (doc: Document) => {
-    console.log("View document:", doc.name);
+    if (doc.fileUrl) {
+      window.open(doc.fileUrl, '_blank');
+    }
     setOpenMenuId(null);
   };
 
+  const handleSaveRename = async () => {
+    if (selectedDoc && newName.trim()) {
+      // Update document name via service
+      await documentsService.update(selectedDoc.id, { name: newName.trim() });
+      // Reload documents
+      const updatedDocs = await documentsService.getAll();
+      setDocuments(updatedDocs);
+    }
+    setShowRenameModal(false);
+    setSelectedDoc(null);
+    setNewName('');
+  };
+
+  const handleCancelRename = () => {
+    setShowRenameModal(false);
+    setSelectedDoc(null);
+    setNewName('');
+  };
+
   const handleRename = (doc: Document) => {
-    console.log("Rename document:", doc.name);
+    setSelectedDoc(doc);
+    setNewName(doc.name);
+    setShowRenameModal(true);
     setOpenMenuId(null);
   };
 
   const handleDelete = (doc: Document) => {
-    console.log("Delete document:", doc.name);
+    setSelectedDoc(doc);
+    setShowDeleteModal(true);
     setOpenMenuId(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedDoc) {
+      // Delete document via service
+      await documentsService.delete(selectedDoc.id);
+      // Reload documents
+      const updatedDocs = await documentsService.getAll();
+      setDocuments(updatedDocs);
+    }
+    setShowDeleteModal(false);
+    setSelectedDoc(null);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedDoc(null);
+  };
+
+  const handleDocumentClick = (doc: Document) => {
+    // Open the menu when clicking on the document card
+    toggleMenu(doc.id);
   };
 
   // Close menu when clicking outside
@@ -72,7 +116,7 @@ export function UploadedDocuments() {
           </div>
         ) : (
           documents.map((doc) => (
-            <div key={doc.id} className="softui-card p-4 flex items-center gap-4">
+            <div key={doc.id} className="softui-card p-4 flex items-center gap-4 cursor-pointer hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow" onClick={() => handleDocumentClick(doc)}>
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
                 <FileText className="w-5 h-5" style={{ color: colors.primary.base }} />
               </div>
@@ -87,7 +131,7 @@ export function UploadedDocuments() {
                 </div>
               </div>
 
-              <div className="relative" ref={(el) => { menuRefs.current[doc.id] = el; }}>
+              <div className="relative" ref={(el) => { menuRefs.current[doc.id] = el; }} onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => toggleMenu(doc.id)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
@@ -124,6 +168,67 @@ export function UploadedDocuments() {
           ))
         )}
       </div>
+
+      {/* Rename Modal */}
+      {showRenameModal && selectedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Rename document</h3>
+            <p className="text-sm text-gray-600 mb-4">Enter a new name for your document.</p>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Enter document name"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelRename}
+                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveRename}
+                className="flex-1 px-4 py-3 rounded-lg text-black font-medium transition-colors"
+                style={{
+                  background: colors.primary.gradient,
+                  boxShadow: colors.shadows.gold,
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete document</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete <span className="font-semibold text-gray-900">{selectedDoc.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-3 rounded-lg text-white font-medium transition-colors bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

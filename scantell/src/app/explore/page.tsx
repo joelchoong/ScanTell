@@ -1,14 +1,17 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors, typography } from "@/lib/design-system";
 import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus } from "lucide-react";
 import Image from "next/image";
+import { documentsService, Document as DocType } from "@/lib/services/documentsService";
 
 export default function ExplorePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -16,13 +19,46 @@ export default function ExplorePage() {
   const [customFileName, setCustomFileName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showChangeDropdown, setShowChangeDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const changeDropdownRef = useRef<HTMLDivElement>(null);
+  const [documents, setDocuments] = useState<DocType[]>([]);
+
+  // Load documents from service
+  useEffect(() => {
+    documentsService.getAll().then(docs => {
+      setDocuments(docs);
+    });
+  }, []);
+
+  // Handle file from URL parameters (when navigating from dashboard)
+  useEffect(() => {
+    const fileParam = searchParams.get('file');
+    const urlParam = searchParams.get('url');
+    
+    if (fileParam && urlParam) {
+      // Create a mock File object from the URL parameters
+      const fileName = decodeURIComponent(fileParam);
+      const decodedUrl = decodeURIComponent(urlParam);
+      
+      setDisplayName(fileName);
+      setCustomFileName(fileName);
+      setFileUrl(decodedUrl);
+      setSelectedFile({ name: fileName } as File);
+      setIsProcessing(true);
+      
+      // Simulate processing
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 3000);
+    }
+  }, [searchParams]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
@@ -31,6 +67,18 @@ export default function ExplorePage() {
       // Create object URL for preview
       const url = URL.createObjectURL(file);
       setFileUrl(url);
+      
+      // Add document to service
+      await documentsService.add({
+        name: file.name,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        fileUrl: url,
+      });
+      
+      // Reload documents
+      const updatedDocs = await documentsService.getAll();
+      setDocuments(updatedDocs);
+      
       // Start processing
       setIsProcessing(true);
       // Show rename modal
@@ -71,11 +119,29 @@ export default function ExplorePage() {
     setShowRenameModal(false);
   };
 
+  const handleSelectDocument = (doc: DocType) => {
+    setSelectedFile({ name: doc.name } as File);
+    setDisplayName(doc.name);
+    setCustomFileName(doc.name);
+    setFileUrl(doc.fileUrl || null);
+    setIsProcessing(true);
+    setShowDropdown(false);
+    setShowChangeDropdown(false);
+    
+    // Simulate processing
+    setTimeout(() => {
+      setIsProcessing(false);
+    }, 3000);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+      }
+      if (changeDropdownRef.current && !changeDropdownRef.current.contains(event.target as Node)) {
+        setShowChangeDropdown(false);
       }
     };
 
@@ -137,20 +203,52 @@ export default function ExplorePage() {
                       </button>
                       {showDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10">
-                          {/* Empty state dropdown */}
-                          <div className="p-4 text-center">
-                            <p className="text-sm font-medium text-gray-900">No documents yet</p>
-                            <p className="text-xs text-gray-500 mt-1">Upload one to get started</p>
-                          </div>
-                          <div className="border-t border-gray-200">
-                            <button
-                              onClick={handleUploadClick}
-                              className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                            >
-                              <Plus className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm font-medium text-gray-700">Upload a document</span>
-                            </button>
-                          </div>
+                          {/* Documents list */}
+                          {documents.length > 0 ? (
+                            <>
+                              {documents.map((doc) => (
+                                <button
+                                  key={doc.id}
+                                  onClick={() => handleSelectDocument(doc)}
+                                  className="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
+                                    <FileText className="w-4 h-4" style={{ color: colors.primary.base }} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                                    <p className="text-xs text-gray-500">{doc.date}</p>
+                                  </div>
+                                </button>
+                              ))}
+                              <div className="border-t border-gray-200">
+                                <button
+                                  onClick={handleUploadClick}
+                                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Plus className="w-4 h-4 text-gray-500" />
+                                  <span className="text-sm font-medium text-gray-700">Upload new document</span>
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              {/* Empty state dropdown */}
+                              <div className="p-4 text-center">
+                                <p className="text-sm font-medium text-gray-900">No documents yet</p>
+                                <p className="text-xs text-gray-500 mt-1">Upload one to get started</p>
+                              </div>
+                              <div className="border-t border-gray-200">
+                                <button
+                                  onClick={handleUploadClick}
+                                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Plus className="w-4 h-4 text-gray-500" />
+                                  <span className="text-sm font-medium text-gray-700">Upload a document</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -165,24 +263,59 @@ export default function ExplorePage() {
               {/* Selected Document Display */}
               {selectedFile && (
                 <section
-                  className="rounded-[2rem] p-5 relative overflow-hidden shadow-sm"
+                  className="rounded-[2rem] p-5 relative shadow-sm"
                   style={{ backgroundColor: colors.background.base }}
                 >
                   <div className="relative z-10 pr-24">
                     <h1 className="text-[18px] font-bold text-gray-900 leading-tight truncate mb-4">
                       {displayName || selectedFile.name}
                     </h1>
-                    <button
-                      disabled
-                      className="transition-colors text-black text-[13px] font-semibold px-4 py-2 rounded-full inline-flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
-                      style={{
-                        background: colors.primary.gradient,
-                        boxShadow: colors.shadows.gold,
-                      }}
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                      Change Document
-                    </button>
+                    <div className="relative" ref={changeDropdownRef}>
+                      <button
+                        onClick={() => setShowChangeDropdown(!showChangeDropdown)}
+                        className="transition-colors text-black text-[13px] font-semibold px-4 py-2 rounded-full inline-flex items-center justify-center gap-2 hover:opacity-90"
+                        style={{
+                          background: colors.primary.gradient,
+                          boxShadow: colors.shadows.gold,
+                        }}
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showChangeDropdown ? 'rotate-180' : ''}`} />
+                        Change Document
+                      </button>
+                      {showChangeDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10">
+                          {documents.filter(doc => doc.name !== (displayName || selectedFile.name)).map((doc) => (
+                            <button
+                              key={doc.id}
+                              onClick={() => handleSelectDocument(doc)}
+                              className="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
+                                <FileText className="w-4 h-4" style={{ color: colors.primary.base }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                                <p className="text-xs text-gray-500">{doc.date}</p>
+                              </div>
+                            </button>
+                          ))}
+                          {documents.filter(doc => doc.name !== (displayName || selectedFile.name)).length === 0 && (
+                            <div className="p-4 text-center">
+                              <p className="text-sm text-gray-500">No other documents</p>
+                            </div>
+                          )}
+                          <div className="border-t border-gray-200">
+                            <button
+                              onClick={handleUploadClick}
+                              className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                            >
+                              <Plus className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-700">Upload new document</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={handleViewDocument}

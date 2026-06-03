@@ -1,12 +1,16 @@
 "use client";
 
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import { colors, typography } from "@/lib/design-system";
 import { Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { documentsService } from "@/lib/services/documentsService";
 
 function HeroCardComponent() {
   const [animationData, setAnimationData] = useState<any>(null);
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Lazy load the Lottie animation
@@ -14,6 +18,28 @@ function HeroCardComponent() {
       setAnimationData(module.default);
     });
   }, []);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create object URL for the file
+      const fileUrl = URL.createObjectURL(file);
+      
+      // Add document to service
+      await documentsService.add({
+        name: file.name,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        fileUrl: fileUrl,
+      });
+      
+      // Navigate to explore page with file info
+      router.push(`/explore?file=${encodeURIComponent(file.name)}&url=${encodeURIComponent(fileUrl)}`);
+    }
+  };
 
   return (
       <div
@@ -42,7 +68,16 @@ function HeroCardComponent() {
 
       {/* CTA Button below animation */}
       <div className="relative z-10 text-left mt-auto flex justify-start">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf,.doc,.docx"
+          onChange={handleFileChange}
+          className="hidden"
+          capture="environment"
+        />
         <button
+          onClick={handleUploadClick}
           className={`transition-colors text-black ${typography.button} px-8 py-4 rounded-full flex items-center justify-center hover:opacity-90`}
           style={{
             background: colors.primary.gradient,
