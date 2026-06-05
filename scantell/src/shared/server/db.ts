@@ -1,11 +1,17 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-// Use libsql adapter for Prisma 7 SQLite support
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-  // PrismaLibSql accepts a libsql Config object directly
-  const adapter = new PrismaLibSql({ url });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL environment variable is not defined");
+  }
+
+  const pool = new pg.Pool({
+    connectionString,
+  });
+  const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
     adapter,

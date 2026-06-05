@@ -2,7 +2,7 @@ import { auth } from "@/features/auth/server/authConfig";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard"];
+const protectedRoutes = ["/dashboard", "/chat", "/explore", "/profile"];
 
 // Routes only for unauthenticated users
 const authRoutes = ["/login", "/verify-request", "/auth-error"];
