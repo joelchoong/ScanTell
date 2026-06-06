@@ -11,10 +11,6 @@ export async function POST(req: NextRequest) {
   if (authResult instanceof NextResponse) return authResult;
   const { userId } = authResult;
 
-  // Debug — remove after confirming
-  console.log("[upload] BLOB_READ_WRITE_TOKEN present:", !!process.env.BLOB_READ_WRITE_TOKEN);
-  console.log("[upload] BLOB_STORE_ID present:", !!process.env.BLOB_STORE_ID);
-
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -41,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     // Upload to Vercel Blob — stored under userId prefix for organisation
     const blob = await put(`documents/${userId}/${file.name}`, file, {
-      access: "public",
+      access: "private",
       contentType: "application/pdf",
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
