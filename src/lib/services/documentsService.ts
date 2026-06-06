@@ -8,19 +8,8 @@ export interface Document {
   fileUrl?: string;
 }
 
-// Mock data - replace with actual database calls in production
-let mockDocuments: Document[] = [
-  {
-    id: "1",
-    name: "Contract_Agreement.pdf",
-    date: "May 30, 2026",
-  },
-  {
-    id: "2",
-    name: "Invoice_2024.pdf",
-    date: "May 29, 2026",
-  },
-];
+// Mock data — starts empty, populated when user uploads documents
+let mockDocuments: Document[] = [];
 
 export const documentsService = {
   // Get all documents
