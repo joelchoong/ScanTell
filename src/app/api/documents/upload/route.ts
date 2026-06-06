@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     const blob = await put(`documents/${userId}/${file.name}`, file, {
       access: "public",
       contentType: "application/pdf",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     // Save metadata to Neon — always scoped to userId
