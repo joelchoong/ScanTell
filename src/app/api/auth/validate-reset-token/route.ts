@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
           gt: new Date(),
         },
       },
-    });
+    } as any);
 
     if (!user) {
       return NextResponse.json(

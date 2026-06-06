@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
           gt: new Date(),
         },
       },
-    });
+    } as any);
 
     if (!user) {
       return NextResponse.json(
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         resetToken: null,
         resetTokenExpires: null,
       },
-    });
+    } as any);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
