@@ -3,52 +3,34 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useCallback } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { GoogleSignIn } from "./GoogleSignIn";
+import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { colors } from "@/lib/design-system";
-import { validateEmail, validatePassword } from "@/lib/validation";
+import { validateEmail, validateName, validatePassword } from "@/lib/validation";
 import { Toast, ToastType } from "@/shared/components/Toast";
 import { FieldError } from "@/shared/components/FieldError";
 
 interface ToastState { message: string; type: ToastType }
-interface FieldErrors { email?: string; password?: string }
+interface FieldErrors { name?: string; email?: string; password?: string }
 
-export function LoginForm({
-  searchParams,
-}: {
-  searchParams: { error?: string; callbackUrl?: string; registered?: string };
-}) {
-  const callbackUrl = searchParams.callbackUrl ?? "/dashboard";
+export function RegisterForm() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [toast, setToast] = useState<ToastState | null>(
-    searchParams.registered
-      ? { message: "Account created — sign in below.", type: "success" }
-      : searchParams.error
-      ? {
-          message:
-            searchParams.error === "OAuthAccountNotLinked"
-              ? "This email is already linked to another sign-in method."
-              : "Something went wrong. Please try again.",
-          type: "error",
-        }
-      : null
-  );
+  const [toast, setToast] = useState<ToastState | null>(null);
   const dismissToast = useCallback(() => setToast(null), []);
 
   const errors: FieldErrors = {
+    name: validateName(name),
     email: validateEmail(email),
     password: validatePassword(password),
   };
 
-  const showError = (field: keyof FieldErrors) =>
-    touched[field] ? errors[field] : "";
+  const showError = (field: keyof FieldErrors) => touched[field] ? errors[field] : "";
 
   const handleBlur = (field: string) =>
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -57,29 +39,37 @@ export function LoginForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched({ email: true, password: true });
+    // Mark all fields touched to show all errors on submit attempt
+    setTouched({ name: true, email: true, password: true });
     if (hasErrors) return;
 
     setLoading(true);
-    const result = await signIn("email-password", {
-      email,
-      password,
-      redirect: false,
-    });
-    setLoading(false);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    if (result?.error) {
-      setToast({ message: "Incorrect email or password.", type: "error" });
-      return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        setToast({ message: data.error || "Something went wrong.", type: "error" });
+        return;
+      }
+
+      router.push("/login?registered=true");
+    } catch {
+      setToast({ message: "Something went wrong. Please try again.", type: "error" });
+    } finally {
+      setLoading(false);
     }
-
-    router.push(callbackUrl);
   };
 
   const inputClass = (field: keyof FieldErrors) =>
     `w-full py-3.5 bg-white border rounded-2xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition shadow-sm ${
       showError(field)
-        ? "border-red-400 focus:ring-red-300"
+        ? "border-red-400 focus:ring-red-300 pr-4"
         : "border-gray-200 focus:ring-yellow-400"
     }`;
 
@@ -98,11 +88,29 @@ export function LoginForm({
 
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
-          <p className="text-sm text-gray-500">Enter your email &amp; password to continue</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign Up</h1>
+          <p className="text-sm text-gray-500">Use proper information to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {/* Name */}
+          <div>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={() => handleBlur("name")}
+                placeholder="Full name"
+                aria-describedby="name-error"
+                className={`${inputClass("name")} pl-11`}
+              />
+            </div>
+            <FieldError message={showError("name")} />
+          </div>
+
           {/* Email */}
           <div>
             <div className="relative">
@@ -127,11 +135,11 @@ export function LoginForm({
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => handleBlur("password")}
-                placeholder="Password"
+                placeholder="Password (min. 8 characters)"
                 aria-describedby="password-error"
                 className={`${inputClass("password")} pl-11 pr-11`}
               />
@@ -147,16 +155,13 @@ export function LoginForm({
             <FieldError message={showError("password")} />
           </div>
 
-          {/* Forgot password */}
-          <div className="flex justify-end">
-            <Link
-              href="/forgot-password"
-              className="text-sm font-medium"
-              style={{ color: colors.primary.dark }}
-            >
-              Forget password?
-            </Link>
-          </div>
+          {/* Terms */}
+          <p className="text-xs text-gray-400 text-center px-2">
+            By signing up, you agree to our{" "}
+            <span className="font-semibold" style={{ color: colors.primary.dark }}>Terms &amp; Conditions</span>
+            {" "}and{" "}
+            <span className="font-semibold" style={{ color: colors.primary.dark }}>Privacy Policy</span>
+          </p>
 
           <button
             type="submit"
@@ -164,26 +169,14 @@ export function LoginForm({
             className="w-full py-4 rounded-2xl text-black text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             style={{ background: colors.primary.gradient, boxShadow: colors.shadows.gold }}
           >
-            {loading ? "Signing in..." : "Login"}
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 
-        <div className="my-6 flex items-center gap-3">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400">Or Continue with</span>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
-
-        <GoogleSignIn callbackUrl={callbackUrl} />
-
         <p className="text-center text-sm text-gray-500 mt-6">
-          Haven&apos;t any account?{" "}
-          <Link
-            href="/register"
-            className="font-semibold hover:underline"
-            style={{ color: colors.primary.dark }}
-          >
-            Sign up
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold hover:underline" style={{ color: colors.primary.dark }}>
+            Sign in
           </Link>
         </p>
       </div>
