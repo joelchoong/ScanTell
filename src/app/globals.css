@@ -13,12 +13,10 @@
 
 html {
   background: #f0f0f3;
-  min-height: 100vh;
 }
 
 body {
   background: #f0f0f3;
-  min-height: 100vh;
   margin: 0;
   padding: 0;
 }

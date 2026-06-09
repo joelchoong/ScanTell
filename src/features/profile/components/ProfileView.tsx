@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Mail, LogOut, ChevronRight, HelpCircle, Shield } from "lucide-react";
+import { User, Mail, LogOut, ChevronRight, HelpCircle, Shield, Settings } from "lucide-react";
 import { signOutAction } from "./signOutAction";
 import Image from "next/image";
+import Link from "next/link";
 
 interface User {
   name?: string | null;
@@ -78,20 +79,13 @@ export function ProfileView() {
           Profile Settings
         </h3>
         <div className="softui-card divide-y divide-gray-100">
-          <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+          <Link href="/dashboard/settings" className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-900">Edit Profile</span>
+              <Settings className="w-5 h-5 text-gray-400" />
+              <span className="text-gray-900">Settings</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
-          <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-900">Change Email</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
+          </Link>
         </div>
       </section>
 
