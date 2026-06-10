@@ -4,6 +4,8 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/shared/server/db";
 import bcrypt from "bcryptjs";
+import { env } from "@/lib/env";
+import { getUserFromCache, setUserInCache } from "@/lib/sessionCache";
 
 const emailPasswordProvider = Credentials({
   id: "email-password",
@@ -37,8 +39,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   providers: [
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      clientId: env.AUTH_GOOGLE_ID,
+      clientSecret: env.AUTH_GOOGLE_SECRET,
     }),
     emailPasswordProvider,
   ],
@@ -57,14 +59,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id as string;
-        // Fetch latest user data from database
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { name: true, email: true },
-        });
-        if (dbUser) {
-          session.user.name = dbUser.name;
-          session.user.email = dbUser.email;
+        
+        // Try to get user data from cache first
+        const cachedUser = getUserFromCache(token.id as string);
+        
+        if (cachedUser) {
+          session.user.name = cachedUser.name;
+          session.user.email = cachedUser.email;
+        } else {
+          // Fetch from database and cache the result
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { name: true, email: true },
+          });
+          
+          if (dbUser) {
+            session.user.name = dbUser.name;
+            session.user.email = dbUser.email;
+            setUserInCache(token.id as string, {
+              name: dbUser.name,
+              email: dbUser.email,
+            });
+          }
         }
       }
       return session;

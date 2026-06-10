@@ -20,48 +20,36 @@ export function ProfileSettingsForm() {
     setMessage(null);
 
     try {
-      console.log("Saving profile changes...", { name, email, sessionName: session?.user?.name, sessionEmail: session?.user?.email });
-
       // Update name
       if (name !== session?.user?.name) {
-        console.log("Updating name to:", name);
         const res = await fetch("/api/user/update-name", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name }),
         });
 
-        console.log("Name update response status:", res.status);
         if (!res.ok) {
           const data = await res.json();
-          console.error("Name update error:", data);
           throw new Error(data.error || "Failed to update name");
         }
-        console.log("Name updated successfully");
       }
 
       // Update email
       if (email !== session?.user?.email) {
-        console.log("Updating email to:", email);
         const res = await fetch("/api/user/update-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
         });
 
-        console.log("Email update response status:", res.status);
         if (!res.ok) {
           const data = await res.json();
-          console.error("Email update error:", data);
           throw new Error(data.error || "Failed to update email");
         }
-        console.log("Email updated successfully");
       }
 
       // Update session and refresh page
-      console.log("Updating session...");
       await update();
-      console.log("Session updated successfully");
 
       setMessage({ type: "success", text: "Profile updated successfully" });
 
@@ -70,7 +58,6 @@ export function ProfileSettingsForm() {
         router.refresh();
       }, 500);
     } catch (err) {
-      console.error("Profile save error:", err);
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Something went wrong" });
     } finally {
       setIsSaving(false);

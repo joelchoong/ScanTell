@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("[delete-account] error:", err);
     const message = process.env.NODE_ENV === "development" && err instanceof Error
       ? err.message
       : "Something went wrong. Please try again.";

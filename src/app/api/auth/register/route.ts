@@ -2,9 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/shared/server/db";
 import { EMAIL_REGEX } from "@/lib/validation";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting: 5 requests per minute per IP
+    const ip = getClientIp(req);
+    const { success, remaining, resetTime } = await rateLimit({
+      identifier: `register:${ip}`,
+      limit: 5,
+      window: 60 * 1000, // 1 minute
+    });
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": "5",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": new Date(resetTime).toISOString(),
+          },
+        }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     if (!email || !password) {
@@ -46,9 +69,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    return NextResponse.json(
+      { success: true },
+      {
+        status: 201,
+        headers: {
+          "X-RateLimit-Limit": "5",
+          "X-RateLimit-Remaining": remaining.toString(),
+          "X-RateLimit-Reset": new Date(resetTime).toISOString(),
+        },
+      }
+    );
   } catch (err) {
-    console.error("[register] error:", err);
     const message = process.env.NODE_ENV === "development" && err instanceof Error
       ? err.message
       : "Something went wrong. Please try again.";
