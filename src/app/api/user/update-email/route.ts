@@ -6,7 +6,8 @@ import { EMAIL_REGEX } from "@/lib/validation";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    
+    console.log("[update-email] session:", session?.user?.id);
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -15,6 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { email } = await req.json();
+    console.log("[update-email] received email:", email);
 
     if (!email || typeof email !== "string") {
       return NextResponse.json(
@@ -42,10 +44,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("[update-email] updating user:", session.user.id, "to email:", email.toLowerCase());
     await prisma.user.update({
       where: { id: session.user.id },
       data: { email: email.toLowerCase() },
     });
+    console.log("[update-email] update successful");
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/features/auth/server/authConfig";
 import { prisma } from "@/shared/server/db";
+import { signOut } from "@/features/auth/server/authConfig";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    console.log("[update-name] session:", session?.user?.id);
-
+    
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -14,26 +14,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name } = await req.json();
-    console.log("[update-name] received name:", name);
-
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Name is required" },
-        { status: 400 }
-      );
-    }
-
-    console.log("[update-name] updating user:", session.user.id, "to name:", name.trim());
+    // Anonymize user data by removing name and email
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: name.trim() },
+      data: { 
+        name: null,
+        email: `deleted-${session.user.id}@scantell.local`,
+      },
     });
-    console.log("[update-name] update successful");
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("[update-name] error:", err);
+    console.error("[delete-account] error:", err);
     const message = process.env.NODE_ENV === "development" && err instanceof Error
       ? err.message
       : "Something went wrong. Please try again.";

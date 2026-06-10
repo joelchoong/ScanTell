@@ -79,10 +79,10 @@ export function ProfileView() {
           Profile Settings
         </h3>
         <div className="softui-card divide-y divide-gray-100">
-          <Link href="/dashboard/settings" className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+          <Link href="/profile/edit-profile" className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-3">
               <Settings className="w-5 h-5 text-gray-400" />
-              <span className="text-gray-900">Settings</span>
+              <span className="text-gray-900">Edit Profile</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </Link>
@@ -95,20 +95,20 @@ export function ProfileView() {
           Support
         </h3>
         <div className="softui-card divide-y divide-gray-100">
-          <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+          <Link href="/faq" className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-3">
               <HelpCircle className="w-5 h-5 text-gray-400" />
               <span className="text-gray-900">FAQ</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
-          <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+          </Link>
+          <Link href="/privacy" className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-gray-400" />
               <span className="text-gray-900">Privacy Policy</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
+          </Link>
         </div>
       </section>
 

@@ -160,7 +160,9 @@ export function RegisterForm() {
             By signing up, you agree to our{" "}
             <span className="font-semibold" style={{ color: colors.primary.dark }}>Terms &amp; Conditions</span>
             {" "}and{" "}
-            <span className="font-semibold" style={{ color: colors.primary.dark }}>Privacy Policy</span>
+            <Link href="/privacy" className="font-semibold hover:underline" style={{ color: colors.primary.dark }}>
+              Privacy Policy
+            </Link>
           </p>
 
           <button
