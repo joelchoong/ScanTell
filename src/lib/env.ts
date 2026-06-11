@@ -2,8 +2,6 @@
 // This ensures all required environment variables are set at startup
 
 const requiredEnvVars = {
-  AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
-  AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
   DATABASE_URL: process.env.DATABASE_URL,
@@ -13,6 +11,9 @@ const optionalEnvVars = {
   NODE_ENV: process.env.NODE_ENV || "development",
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  // Google OAuth — optional until the feature is implemented
+  AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
+  AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
 } as const;
 
 function validateEnv() {

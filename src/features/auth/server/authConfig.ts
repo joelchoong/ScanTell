@@ -34,16 +34,21 @@ const emailPasswordProvider = Credentials({
   },
 });
 
+// Only include Google OAuth when credentials are configured
+const googleProvider =
+  env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET
+    ? [
+        Google({
+          clientId: env.AUTH_GOOGLE_ID,
+          clientSecret: env.AUTH_GOOGLE_SECRET,
+        }),
+      ]
+    : [];
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
-  providers: [
-    Google({
-      clientId: env.AUTH_GOOGLE_ID,
-      clientSecret: env.AUTH_GOOGLE_SECRET,
-    }),
-    emailPasswordProvider,
-  ],
+  providers: [...googleProvider, emailPasswordProvider],
   pages: {
     signIn: "/login",
     verifyRequest: "/verify-request",
