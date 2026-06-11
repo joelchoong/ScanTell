@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/features/auth/server/authConfig";
 import { prisma } from "@/shared/server/db";
+import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
 import { signOut } from "@/features/auth/server/authConfig";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const result = await requireAuthApi();
+    if (result instanceof NextResponse) return result;
+    const { userId } = result;
 
     // Anonymize user data by removing name and email
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { 
         name: null,
-        email: `deleted-${session.user.id}@scantell.local`,
+        email: `deleted-${userId}@scantell.local`,
       },
     });
 

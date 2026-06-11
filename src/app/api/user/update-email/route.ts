@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/features/auth/server/authConfig";
 import { prisma } from "@/shared/server/db";
 import { EMAIL_REGEX } from "@/lib/validation";
 import { invalidateUserCache } from "@/lib/sessionCache";
+import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const result = await requireAuthApi();
+    if (result instanceof NextResponse) return result;
+    const { userId } = result;
 
     const { email } = await req.json();
 
@@ -36,7 +31,7 @@ export async function POST(req: NextRequest) {
       where: { email },
     });
 
-    if (existingUser && existingUser.id !== session.user.id) {
+    if (existingUser && existingUser.id !== userId) {
       return NextResponse.json(
         { error: "Email is already in use" },
         { status: 400 }
@@ -44,12 +39,12 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { email: email.toLowerCase() },
     });
 
     // Invalidate cache to force refresh on next session callback
-    invalidateUserCache(session.user.id);
+    invalidateUserCache(userId);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {

@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/features/auth/server/authConfig";
 import { prisma } from "@/shared/server/db";
 import bcrypt from "bcryptjs";
+import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const result = await requireAuthApi();
+    if (result instanceof NextResponse) return result;
+    const { userId } = result;
 
     const { currentPassword, newPassword } = await req.json();
 
@@ -32,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     // Get user with current password
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
     });
 
     if (!user?.password) {
@@ -57,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Update password
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { password: hashedPassword },
     });
 

@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/features/auth/server/authConfig";
 import { prisma } from "@/shared/server/db";
 import { invalidateUserCache } from "@/lib/sessionCache";
+import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const result = await requireAuthApi();
+    if (result instanceof NextResponse) return result;
+    const { userId } = result;
 
     const { name } = await req.json();
 
@@ -24,12 +19,12 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { name: name.trim() },
     });
 
     // Invalidate cache to force refresh on next session callback
-    invalidateUserCache(session.user.id);
+    invalidateUserCache(userId);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
