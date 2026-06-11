@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Toast } from "@/shared/components/Toast";
 
-export default function VerificationSentPage() {
+function VerificationSentContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
   const [isResending, setIsResending] = useState(false);
@@ -97,5 +97,13 @@ export default function VerificationSentPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function VerificationSentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">Loading...</div>}>
+      <VerificationSentContent />
+    </Suspense>
   );
 }
