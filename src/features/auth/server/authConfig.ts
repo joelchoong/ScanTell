@@ -30,7 +30,7 @@ const emailPasswordProvider = Credentials({
 
     if (!isValid) return null;
 
-    return { id: user.id, email: user.email, name: user.name };
+    return { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified };
   },
 });
 
@@ -59,10 +59,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id as string;
-        
+
         // Try to get user data from cache first
         const cachedUser = getUserFromCache(token.id as string);
-        
+
         if (cachedUser) {
           session.user.name = cachedUser.name;
           session.user.email = cachedUser.email;
@@ -70,12 +70,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Fetch from database and cache the result
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { name: true, email: true },
+            select: { name: true, email: true, emailVerified: true },
           });
-          
+
           if (dbUser) {
             session.user.name = dbUser.name;
             session.user.email = dbUser.email;
+            session.user.emailVerified = dbUser.emailVerified;
             setUserInCache(token.id as string, {
               name: dbUser.name,
               email: dbUser.email,

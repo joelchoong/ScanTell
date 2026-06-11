@@ -58,7 +58,7 @@ export function RegisterForm() {
         return;
       }
 
-      router.push("/login?registered=true");
+      router.push(`/verification-sent?email=${encodeURIComponent(email)}`);
     } catch {
       setToast({ message: "Something went wrong. Please try again.", type: "error" });
     } finally {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/shared/server/db";
-import { EMAIL_REGEX } from "@/lib/validation";
+import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import crypto from "crypto";
 import { Resend } from "resend";
@@ -9,11 +8,11 @@ import { env } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
   try {
-    // Rate limiting: 5 requests per minute per IP
+    // Rate limiting: 3 requests per minute per IP
     const ip = getClientIp(req);
     const { success, remaining, resetTime } = await rateLimit({
-      identifier: `register:${ip}`,
-      limit: 5,
+      identifier: `send-verification:${ip}`,
+      limit: 3,
       window: 60 * 1000, // 1 minute
     });
 
@@ -23,7 +22,7 @@ export async function POST(req: NextRequest) {
         {
           status: 429,
           headers: {
-            "X-RateLimit-Limit": "5",
+            "X-RateLimit-Limit": "3",
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": new Date(resetTime).toISOString(),
           },
@@ -31,49 +30,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email, password } = await req.json();
+    const result = await requireAuthApi();
+    if (result instanceof NextResponse) return result;
+    const { userId } = result;
 
-    if (!email || !password) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
       return NextResponse.json(
-        { error: "Email and password are required." },
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // If email is already verified, no need to send another
+    if (user.emailVerified) {
+      return NextResponse.json(
+        { error: "Email is already verified" },
         { status: 400 }
       );
     }
-
-    if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json(
-        { error: "Enter a valid email (e.g. you@example.com)." },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters." },
-        { status: 400 }
-      );
-    }
-
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json(
-        { error: "An account with this email already exists." },
-        { status: 409 }
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create user with verification token
-    const user = await prisma.user.create({
+    // Store verification token in database
+    await prisma.user.update({
+      where: { id: userId },
       data: {
-        name: name || null,
-        email,
-        password: hashedPassword,
         emailVerifiedToken: verificationToken,
         emailVerifiedTokenExpires: verificationTokenExpires,
       },
@@ -87,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     await resend.emails.send({
       from: env.RESEND_FROM_EMAIL!,
-      to: email,
+      to: user.email,
       subject: "Verify your ScanTell email",
       template: {
         id: "401d8a5a-13ac-401b-8b5c-ffc4162541cd",
@@ -101,9 +88,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { success: true },
       {
-        status: 201,
+        status: 200,
         headers: {
-          "X-RateLimit-Limit": "5",
+          "X-RateLimit-Limit": "3",
           "X-RateLimit-Remaining": remaining.toString(),
           "X-RateLimit-Reset": new Date(resetTime).toISOString(),
         },

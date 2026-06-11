@@ -3,6 +3,9 @@ import { prisma } from "@/shared/server/db";
 import { EMAIL_REGEX } from "@/lib/validation";
 import { invalidateUserCache } from "@/lib/sessionCache";
 import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
+import crypto from "crypto";
+import { Resend } from "resend";
+import { env } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,13 +41,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Update email and reset verification status
     await prisma.user.update({
       where: { id: userId },
-      data: { email: email.toLowerCase() },
-    });
+      data: {
+        email: email.toLowerCase(),
+        emailVerified: null,
+        emailVerifiedToken: verificationToken,
+        emailVerifiedTokenExpires: verificationTokenExpires,
+      },
+    } as any);
 
     // Invalidate cache to force refresh on next session callback
     invalidateUserCache(userId);
+
+    // Send verification email
+    const baseUrl = req.headers.get('host') ? `https://${req.headers.get('host')}` : 'http://localhost:3000';
+    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+
+    const resend = new Resend(env.RESEND_API_KEY);
+
+    await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL!,
+      to: email.toLowerCase(),
+      subject: "Verify your new ScanTell email",
+      template: {
+        id: "c1773527-6d39-4a92-9a95-898bb2d0ccc1",
+        variables: {
+          token: verificationToken,
+          verificationUrl: verificationUrl,
+        },
+      },
+    } as any);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
