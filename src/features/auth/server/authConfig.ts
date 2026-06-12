@@ -71,6 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (cachedUser) {
           session.user.name = cachedUser.name;
           session.user.email = cachedUser.email;
+          session.user.emailVerified = cachedUser.emailVerified;
         } else {
           // Fetch from database and cache the result
           const dbUser = await prisma.user.findUnique({
@@ -85,6 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             setUserInCache(token.id as string, {
               name: dbUser.name,
               email: dbUser.email,
+              emailVerified: dbUser.emailVerified,
             });
           }
         }

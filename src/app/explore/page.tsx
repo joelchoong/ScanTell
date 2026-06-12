@@ -1,137 +1,205 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X } from "lucide-react";
 import Image from "next/image";
-import { documentsService, Document as DocType } from "@/lib/services/documentsService";
+
+interface DBDocument {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileSize: number;
+  isInsuranceDocument?: boolean | null;
+  extractedText?: string | null;
+  analysis?: any | null;
+  createdAt: string;
+}
 
 export default function ExplorePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const router = useRouter();
+  
+  const [documents, setDocuments] = useState<DBDocument[]>([]);
+  const [selectedDoc, setSelectedDoc] = useState<DBDocument | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [customFileName, setCustomFileName] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showChangeDropdown, setShowChangeDropdown] = useState(false);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const changeDropdownRef = useRef<HTMLDivElement>(null);
-  const [documents, setDocuments] = useState<DocType[]>([]);
 
-  // Load documents from service
-  useEffect(() => {
-    documentsService.getAll().then(docs => {
-      setDocuments(docs);
-    });
-  }, []);
-
-  // Handle file from URL parameters (when navigating from dashboard)
-  useEffect(() => {
-    const fileParam = searchParams.get('file');
-    const urlParam = searchParams.get('url');
-    
-    if (fileParam && urlParam) {
-      // Create a mock File object from the URL parameters
-      const fileName = decodeURIComponent(fileParam);
-      const decodedUrl = decodeURIComponent(urlParam);
-      
-      setDisplayName(fileName);
-      setCustomFileName(fileName);
-      setFileUrl(decodedUrl);
-      setSelectedFile({ name: fileName } as File);
-      setIsProcessing(true);
-      
-      // Simulate processing
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 3000);
+  // Load documents from actual endpoint
+  const loadDocuments = async () => {
+    try {
+      const res = await fetch("/api/documents");
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data.documents || []);
+        return data.documents || [];
+      }
+    } catch (err) {
+      console.error("Failed to load documents:", err);
     }
+    return [];
+  };
+
+  useEffect(() => {
+    loadDocuments().then((docs) => {
+      // Check if id is passed as query parameter
+      const docId = searchParams.get('id');
+      if (docId && docs.length > 0) {
+        const found = docs.find((d: any) => d.id === docId);
+        if (found) {
+          handleSelectDocument(found);
+        }
+      } else {
+        // Fallback to file/url parameters if present
+        const fileParam = searchParams.get('file');
+        const urlParam = searchParams.get('url');
+        if (fileParam && urlParam) {
+          const found = docs.find((d: any) => d.fileUrl === decodeURIComponent(urlParam));
+          if (found) {
+            handleSelectDocument(found);
+          }
+        }
+      }
+    });
   }, [searchParams]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
+  const runAnalysis = async (docId: string) => {
+    setIsProcessing(true);
+    setProcessingError(null);
+    try {
+      const res = await fetch(`/api/documents/${docId}/analyze`, {
+        method: "POST"
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to analyze document.");
+      }
+      const data = await res.json();
+      setSelectedDoc(data.document);
+      setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
+    } catch (err: any) {
+      console.error(err);
+      setProcessingError(err.message || "Analysis failed.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      setDisplayName(file.name);
-      setCustomFileName(file.name);
-      // Create object URL for preview
-      const url = URL.createObjectURL(file);
-      setFileUrl(url);
-      
-      // Add document to service
-      await documentsService.add({
-        name: file.name,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        fileUrl: url,
-      });
-      
-      // Reload documents
-      const updatedDocs = await documentsService.getAll();
-      setDocuments(updatedDocs);
-      
-      // Start processing
       setIsProcessing(true);
-      // Show rename modal
-      setShowRenameModal(true);
-      // Simulate processing (replace with actual upload/processing logic)
-      setTimeout(() => {
+      setProcessingError(null);
+      
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        const uploadRes = await fetch("/api/documents/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json();
+          throw new Error(errData.error || "Upload failed.");
+        }
+        
+        const uploadData = await uploadRes.json();
+        const newDoc = uploadData.document;
+        
+        await loadDocuments();
+        setSelectedDoc(newDoc);
+        setCustomFileName(newDoc.name);
+        
+        // Trigger analysis automatically
+        await runAnalysis(newDoc.id);
+      } catch (err: any) {
+        console.error(err);
+        setProcessingError(err.message || "Failed to upload and analyze document.");
         setIsProcessing(false);
-      }, 3000);
-      console.log("File selected:", file.name);
-      // TODO: Implement actual upload logic
+      }
     }
   };
 
   const handleClearFile = () => {
-    setSelectedFile(null);
-    if (fileUrl) {
-      URL.revokeObjectURL(fileUrl);
-      setFileUrl(null);
-    }
+    setSelectedDoc(null);
     setIsProcessing(false);
     setShowRenameModal(false);
     setCustomFileName('');
-    setDisplayName('');
+    setProcessingError(null);
   };
 
   const handleViewDocument = () => {
-    if (fileUrl) {
-      window.open(fileUrl, '_blank');
+    if (selectedDoc?.fileUrl) {
+      window.open(selectedDoc.fileUrl, '_blank');
     }
   };
 
-  const handleSaveRename = () => {
-    setDisplayName(customFileName);
-    setShowRenameModal(false);
+  const handleSaveRename = async () => {
+    if (!selectedDoc || !customFileName.trim()) return;
+    try {
+      const res = await fetch(`/api/documents/${selectedDoc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: customFileName.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedDoc(data.document);
+        setDocuments(prev => prev.map(d => d.id === selectedDoc.id ? data.document : d));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setShowRenameModal(false);
+    }
   };
 
   const handleCancelRename = () => {
     setShowRenameModal(false);
   };
 
-  const handleSelectDocument = (doc: DocType) => {
-    setSelectedFile({ name: doc.name } as File);
-    setDisplayName(doc.name);
+  const handleSelectDocument = async (doc: DBDocument) => {
+    setSelectedDoc(doc);
     setCustomFileName(doc.name);
-    setFileUrl(doc.fileUrl || null);
-    setIsProcessing(true);
     setShowDropdown(false);
     setShowChangeDropdown(false);
+    setProcessingError(null);
     
-    // Simulate processing
-    setTimeout(() => {
-      setIsProcessing(false);
-    }, 3000);
+    // If not yet analyzed, analyze now
+    if (!doc.extractedText) {
+      await runAnalysis(doc.id);
+    }
+  };
+
+  const handleScenarioClick = (scenarioType: string) => {
+    if (!selectedDoc) return;
+    router.push(`/chat?documentId=${selectedDoc.id}&scenario=${scenarioType}`);
+  };
+
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return "";
+    return new Date(isoString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   // Close dropdown when clicking outside
@@ -169,7 +237,7 @@ export default function ExplorePage() {
           <div className="space-y-6 pt-1">
             <div className="space-y-0">
               {/* Upload Section - Hidden when file is selected */}
-              {!selectedFile && (
+              {!selectedDoc && (
                 <section
                   className="rounded-[2rem] p-7 relative shadow-sm"
                   style={{ backgroundColor: colors.background.base }}
@@ -184,10 +252,9 @@ export default function ExplorePage() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*,.pdf,.doc,.docx"
+                      accept="image/*,.pdf"
                       onChange={handleFileChange}
                       className="hidden"
-                      capture="environment"
                     />
                     <div className="relative" ref={dropdownRef}>
                       <button
@@ -217,7 +284,7 @@ export default function ExplorePage() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                                    <p className="text-xs text-gray-500">{doc.date}</p>
+                                    <p className="text-xs text-gray-500">{formatDate(doc.createdAt)}</p>
                                   </div>
                                 </button>
                               ))}
@@ -261,14 +328,20 @@ export default function ExplorePage() {
               )}
 
               {/* Selected Document Display */}
-              {selectedFile && (
+              {selectedDoc && (
                 <section
                   className="rounded-[2rem] p-5 relative shadow-sm"
                   style={{ backgroundColor: colors.background.base }}
                 >
+                  <button
+                    onClick={handleClearFile}
+                    className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 z-20"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                   <div className="relative z-10 pr-24">
-                    <h1 className="text-[18px] font-bold text-gray-900 leading-tight truncate mb-4">
-                      {displayName || selectedFile.name}
+                    <h1 className="text-[18px] font-bold text-gray-900 leading-tight truncate mb-4 cursor-pointer hover:underline" onClick={() => setShowRenameModal(true)}>
+                      {selectedDoc.name}
                     </h1>
                     <div className="relative" ref={changeDropdownRef}>
                       <button
@@ -284,7 +357,7 @@ export default function ExplorePage() {
                       </button>
                       {showChangeDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10">
-                          {documents.filter(doc => doc.name !== (displayName || selectedFile.name)).map((doc) => (
+                          {documents.filter(doc => doc.id !== selectedDoc.id).map((doc) => (
                             <button
                               key={doc.id}
                               onClick={() => handleSelectDocument(doc)}
@@ -295,11 +368,11 @@ export default function ExplorePage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                                <p className="text-xs text-gray-500">{doc.date}</p>
+                                <p className="text-xs text-gray-500">{formatDate(doc.createdAt)}</p>
                               </div>
                             </button>
                           ))}
-                          {documents.filter(doc => doc.name !== (displayName || selectedFile.name)).length === 0 && (
+                          {documents.filter(doc => doc.id !== selectedDoc.id).length === 0 && (
                             <div className="p-4 text-center">
                               <p className="text-sm text-gray-500">No other documents</p>
                             </div>
@@ -319,7 +392,7 @@ export default function ExplorePage() {
                   </div>
                   <button
                     onClick={handleViewDocument}
-                    className="absolute top-1/2 -translate-y-1/2 right-5 transition-colors text-black text-[13px] font-semibold px-4 py-2 rounded-full inline-flex items-center justify-center gap-2 hover:opacity-90"
+                    className="absolute top-1/2 -translate-y-1/2 right-12 transition-colors text-black text-[13px] font-semibold px-4 py-2 rounded-full inline-flex items-center justify-center gap-2 hover:opacity-90"
                     style={{
                       background: colors.primary.gradient,
                       boxShadow: colors.shadows.gold,
@@ -335,110 +408,129 @@ export default function ExplorePage() {
                 </section>
               )}
 
-              {/* Processing State - Show when document is processing */}
-              {selectedFile && isProcessing && (
+              {/* Processing State */}
+              {selectedDoc && isProcessing && (
                 <section className="softui-card p-8 flex flex-col items-center justify-center gap-4 mt-6">
                   <Loader2 className="w-12 h-12 animate-spin" style={{ color: colors.primary.base }} />
                   <div className="text-center">
-                    <p className="text-gray-900 font-medium">Processing document...</p>
-                    <p className="text-gray-500 text-sm mt-1">Please wait while we analyze your document</p>
+                    <p className="text-gray-900 font-medium">Analyzing document...</p>
+                    <p className="text-gray-500 text-sm mt-1">Please wait while Gemini OCR extracts policy information</p>
                   </div>
                 </section>
               )}
 
-              {/* Scenario Cards - Only show when document is uploaded and not processing */}
-              {selectedFile && !isProcessing && (
-                <section className="space-y-4">
+              {/* Processing Error State */}
+              {selectedDoc && processingError && (
+                <section className="softui-card p-6 flex flex-col items-center justify-center gap-4 mt-6 border border-orange-200 bg-orange-50/50">
+                  <AlertCircle className="w-10 h-10 text-orange-500" />
+                  <div className="text-center">
+                    <p className="text-orange-900 font-semibold">Unable to analyze document</p>
+                    <p className="text-orange-700 text-xs mt-1">This document may not be supported. Please upload an insurance document (PDF) to explore scenarios.</p>
+                  </div>
+                  <button
+                    onClick={handleClearFile}
+                    className="softui-btn px-4 py-2 text-xs"
+                  >
+                    Upload Insurance Document
+                  </button>
+                </section>
+              )}
+
+              {/* Not an Insurance Document State */}
+              {selectedDoc && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === false && (
+                <section className="softui-card p-6 flex flex-col items-center justify-center gap-4 mt-6 border border-orange-200 bg-orange-50/50">
+                  <AlertCircle className="w-10 h-10 text-orange-500" />
+                  <div className="text-center">
+                    <p className="text-orange-900 font-semibold">Not an insurance document</p>
+                    <p className="text-orange-700 text-xs mt-1">This document doesn't appear to be an insurance policy. Please upload an insurance document to explore scenarios.</p>
+                  </div>
+                  <button
+                    onClick={handleClearFile}
+                    className="softui-btn px-4 py-2 text-xs"
+                  >
+                    Upload Different Document
+                  </button>
+                </section>
+              )}
+
+              {/* Scenario Cards - Show when document is uploaded, analyzed, and is an insurance document */}
+              {selectedDoc && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === true && (
+                <section className="space-y-4 pt-4">
                   <h2 className={`${typography.sectionHeader} text-gray-900 mt-2`}>What happens if...?</h2>
                   <div className="space-y-3">
-                    <div className="softui-card p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#fbeaf0' }}>
-                            <Stethoscope className="w-5 h-5" style={{ color: '#993556' }} />
-                          </div>
-                          <span className="text-gray-900 font-medium">I am diagnosed with cancer</span>
+                    <button
+                      onClick={() => handleScenarioClick("cancer")}
+                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fbeaf0]">
+                          <Stethoscope className="w-5 h-5 text-[#993556]" />
                         </div>
-                        <button
-                          className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        </button>
+                        <span className="text-gray-900 font-medium">I am diagnosed with cancer</span>
                       </div>
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
+                    </button>
 
-                    <div className="softui-card p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#fcebeb' }}>
-                            <Heart className="w-5 h-5" style={{ color: '#a32d2d' }} />
-                          </div>
-                          <span className="text-gray-900 font-medium">I have a heart attack</span>
+                    <button
+                      onClick={() => handleScenarioClick("heart_attack")}
+                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fcebeb]">
+                          <Heart className="w-5 h-5 text-[#a32d2d]" />
                         </div>
-                        <button
-                          className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        </button>
+                        <span className="text-gray-900 font-medium">I have a heart attack</span>
                       </div>
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
+                    </button>
 
-                    <div className="softui-card p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#e6f1fb' }}>
-                            <Brain className="w-5 h-5" style={{ color: '#185fa5' }} />
-                          </div>
-                          <span className="text-gray-900 font-medium">I have a stroke</span>
+                    <button
+                      onClick={() => handleScenarioClick("stroke")}
+                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#e6f1fb]">
+                          <Brain className="w-5 h-5 text-[#185fa5]" />
                         </div>
-                        <button
-                          className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        </button>
+                        <span className="text-gray-900 font-medium">I have a stroke</span>
                       </div>
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
+                    </button>
 
-                    <div className="softui-card p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#e1f5ee' }}>
-                            <Building2 className="w-5 h-5" style={{ color: '#0f6e56' }} />
-                          </div>
-                          <span className="text-gray-900 font-medium">I am hospitalised</span>
+                    <button
+                      onClick={() => handleScenarioClick("hospitalised")}
+                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#e1f5ee]">
+                          <Building2 className="w-5 h-5 text-[#0f6e56]" />
                         </div>
-                        <button
-                          className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        </button>
+                        <span className="text-gray-900 font-medium">I am hospitalised</span>
                       </div>
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-gray-500" />
+                    </button>
 
-                    <div className="softui-card p-4" style={{ border: '1.5px dashed #e5e7eb', background: 'transparent' }}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
-                            <Plus className="w-5 h-5 text-gray-400" />
-                          </div>
-                          <div>
-                            <span className="text-gray-600 font-medium">Ask a custom scenario</span>
-                            <p className="text-xs text-gray-400 mt-0.5">Type your own what-if</p>
-                          </div>
+                    <button
+                      onClick={() => handleScenarioClick("custom")}
+                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow border-1.5 border-dashed border-gray-300 bg-transparent"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-100">
+                          <Plus className="w-5 h-5 text-gray-400" />
                         </div>
-                        <button
-                          className="w-8 h-8 rounded-lg flex items-center justify-center hover:shadow-[inset_2px_2px_4px_#c8c8d0,inset_-2px_-2px_4px_#ffffff] transition-shadow"
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
-                        </button>
+                        <div>
+                          <span className="text-gray-600 font-medium">Ask a custom scenario</span>
+                          <p className="text-xs text-gray-400 mt-0.5">Type your own what-if</p>
+                        </div>
                       </div>
-                    </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </button>
                   </div>
                 </section>
               )}
 
               {/* How It Works Section - Show only when no document */}
-              {!selectedFile && (
+              {!selectedDoc && (
                 <>
                   <div className="flex items-center gap-3 py-4">
                     <div className="flex-1 h-px bg-gray-200" />
@@ -454,7 +546,7 @@ export default function ExplorePage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900">Upload your document</p>
-                        <p className="text-xs text-gray-600 mt-0.5">PDF, contracts, reports — any file</p>
+                        <p className="text-xs text-gray-600 mt-0.5">PDF or image contract — any document</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -463,7 +555,7 @@ export default function ExplorePage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900">AI reads & understands it</p>
-                        <p className="text-xs text-gray-600 mt-0.5">We extract meaning and context</p>
+                        <p className="text-xs text-gray-600 mt-0.5">Gemini extracts the exact terms and coverage</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -472,7 +564,7 @@ export default function ExplorePage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900">Explore what-if scenarios</p>
-                        <p className="text-xs text-gray-600 mt-0.5">See future outcomes that matter to you</p>
+                        <p className="text-xs text-gray-600 mt-0.5">Click scenarios to query coverage instantly</p>
                       </div>
                     </div>
                   </div>
@@ -486,11 +578,11 @@ export default function ExplorePage() {
       </div>
 
       {/* Rename Modal */}
-      {showRenameModal && (
+      {showRenameModal && selectedDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Rename document</h3>
-            <p className="text-sm text-gray-600 mb-4">Give your document a custom name while it processes.</p>
+            <p className="text-sm text-gray-600 mb-4">Give your document a custom name.</p>
             <input
               type="text"
               value={customFileName}

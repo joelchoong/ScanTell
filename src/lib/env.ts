@@ -14,6 +14,7 @@ const optionalEnvVars = {
   // Google OAuth — optional until the feature is implemented
   AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
   AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 } as const;
 
 function validateEnv() {

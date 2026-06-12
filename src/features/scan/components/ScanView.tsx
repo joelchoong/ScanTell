@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
 import { colors } from "@/lib/design-system";
+import { useSearchParams } from "next/navigation";
 
 interface Message {
   id: string;
@@ -11,7 +12,16 @@ interface Message {
   timestamp: Date;
 }
 
+interface DBDoc {
+  id: string;
+  name: string;
+}
+
 export function ScanView() {
+  const searchParams = useSearchParams();
+  const documentId = searchParams.get("documentId");
+  const scenario = searchParams.get("scenario");
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -21,6 +31,8 @@ export function ScanView() {
     },
   ]);
   const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [hasInitializedScenario, setHasInitializedScenario] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,10 +41,141 @@ export function ScanView() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
+
+  const sendChatMessage = useCallback(async (chatMessages: Message[]) => {
+    setIsTyping(true);
+    try {
+      // Filter out system greetings or invalid roles if any
+      const payloadMessages = chatMessages
+        .filter(m => m.id !== "system-greet")
+        .map(m => ({
+          role: m.role,
+          content: m.content
+        }));
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: payloadMessages,
+          documentId: documentId || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to get response");
+      }
+
+      const data = await res.json();
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: data.reply,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : "Something went wrong while communicating with Gemini.";
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: `Error: ${errMsg}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [documentId]);
+
+  // Initialize scenario if provided in search params
+  useEffect(() => {
+    if (scenario && !hasInitializedScenario) {
+      setTimeout(() => {
+        setHasInitializedScenario(true);
+      }, 0);
+      
+      let promptText = "";
+      if (scenario === "cancer") {
+        promptText = "I've been diagnosed with cancer. Does my policy cover cancer treatment or critical illness payouts?";
+      } else if (scenario === "heart_attack") {
+        promptText = "I had a heart attack. What coverage, hospitalisation benefits, or critical illness payouts do I get?";
+      } else if (scenario === "stroke") {
+        promptText = "I had a stroke. Does my policy cover stroke treatment or critical illness payouts?";
+      } else if (scenario === "hospitalised") {
+        promptText = "I've been hospitalised. What is my room & board limit, co-payment, or daily benefit?";
+      } else if (scenario === "custom") {
+        promptText = "Help me understand my policy's benefits.";
+      }
+
+      if (promptText) {
+        if (documentId) {
+          fetch(`/api/documents`)
+            .then(res => res.json())
+            .then(data => {
+              const doc = data.documents?.find((d: DBDoc) => d.id === documentId);
+              const docName = doc ? doc.name : "your document";
+              
+              const systemGreeting: Message = {
+                id: "system-greet",
+                role: "assistant",
+                content: `Using "${docName}" as context. Analyzing scenario...`,
+                timestamp: new Date()
+              };
+
+              const userMessage: Message = {
+                id: "scenario-user-prompt",
+                role: "user",
+                content: promptText,
+                timestamp: new Date(),
+              };
+
+              setMessages([systemGreeting, userMessage]);
+              sendChatMessage([userMessage]);
+            })
+            .catch((err) => {
+              console.error(err);
+              const userMessage: Message = {
+                id: "scenario-user-prompt",
+                role: "user",
+                content: promptText,
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, userMessage]);
+              sendChatMessage([userMessage]);
+            });
+        }
+      }
+    } else if (documentId && !hasInitializedScenario) {
+      // Just a document selected but no specific scenario
+      setTimeout(() => {
+        setHasInitializedScenario(true);
+      }, 0);
+      
+      fetch(`/api/documents`)
+        .then(res => res.json())
+        .then(data => {
+          const doc = data.documents?.find((d: DBDoc) => d.id === documentId);
+          if (doc) {
+            setMessages([
+              {
+                id: "1",
+                role: "assistant",
+                content: `Hello! I've loaded "${doc.name}" as context. What would you like to know about this policy?`,
+                timestamp: new Date(),
+              }
+            ]);
+          }
+        })
+        .catch(err => console.error(err));
+    }
+  }, [scenario, documentId, hasInitializedScenario, sendChatMessage]);
 
   const handleSendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -41,19 +184,11 @@ export function ScanView() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
 
-    // Simulate AI response
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "I received your message. This is a demo response - the actual AI integration will be implemented later.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    }, 1000);
+    sendChatMessage(updatedMessages);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -87,7 +222,7 @@ export function ScanView() {
               }`}
               style={{ backgroundColor: message.role === "user" ? colors.primary.base : undefined }}
             >
-              <p className="text-sm">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               <p className="text-[10px] mt-1 opacity-60">
                 {message.timestamp.getHours().toString().padStart(2, '0')}:{message.timestamp.getMinutes().toString().padStart(2, '0')}
               </p>
@@ -99,6 +234,17 @@ export function ScanView() {
             )}
           </div>
         ))}
+        {isTyping && (
+          <div className="flex gap-3 justify-start">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.primary.base }}>
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div className="softui-card text-gray-900 max-w-[75%] rounded-2xl px-4 py-3 flex items-center gap-1">
+              <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+              <span className="text-xs text-gray-500">Gemini is thinking...</span>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -110,12 +256,13 @@ export function ScanView() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type a message..."
-            className="flex-1 bg-transparent outline-none text-sm px-3 py-2"
+            disabled={isTyping}
+            placeholder={isTyping ? "Please wait..." : "Type a message..."}
+            className="flex-1 bg-transparent outline-none text-sm px-3 py-2 disabled:opacity-50"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: colors.primary.base, boxShadow: colors.shadows.gold }}
           >

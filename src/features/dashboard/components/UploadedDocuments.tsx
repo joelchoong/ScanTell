@@ -49,7 +49,10 @@ export function UploadedDocuments() {
   }, []);
 
   useEffect(() => {
-    fetchDocuments();
+    const timer = setTimeout(() => {
+      fetchDocuments();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchDocuments]);
 
   // Refresh list when a new document is uploaded

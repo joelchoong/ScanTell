@@ -1,35 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { User, Mail, LogOut, ChevronRight, HelpCircle, Shield, Settings } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { User, LogOut, ChevronRight, HelpCircle, Shield, Settings } from "lucide-react";
 import { signOutAction } from "./signOutAction";
 import Image from "next/image";
 import Link from "next/link";
 
-interface User {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-}
-
 export function ProfileView() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
 
-  useEffect(() => {
-    // Fetch user data client-side
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        setUser(data.user);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
+  if (status === "loading") {
     return (
       <div className="max-w-md mx-auto px-6 space-y-6 pt-2">
         <div className="softui-card p-6">
@@ -50,10 +30,10 @@ export function ProfileView() {
       {/* Profile Header */}
       <div className="softui-card p-6">
         <div className="flex items-center gap-4">
-          {user?.image ? (
+          {session?.user?.image ? (
             <Image
-              src={user.image}
-              alt={user.name || "User"}
+              src={session.user.image}
+              alt={session.user.name || "User"}
               width={64}
               height={64}
               unoptimized
@@ -66,9 +46,9 @@ export function ProfileView() {
           )}
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {user?.name || "User"}
+              {session?.user?.name || "User"}
             </h2>
-            <p className="text-sm text-gray-500">{user?.email}</p>
+            <p className="text-sm text-gray-500">{session?.user?.email}</p>
           </div>
         </div>
       </div>

@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     const blob = await put(`documents/${userId}/${file.name}`, file, {
       access: "private",
       contentType: "application/pdf",
+      addRandomSuffix: true,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 

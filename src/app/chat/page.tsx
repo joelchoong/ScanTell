@@ -1,8 +1,9 @@
 import { ScanView } from "@/features/scan/components/ScanView";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { colors } from "@/lib/design-system";
 import Image from "next/image";
+import { Suspense } from "react";
 
 export default function ScanPage() {
   return (
@@ -29,7 +30,14 @@ export default function ScanPage() {
 
         {/* Chat content */}
         <div className="flex-1 overflow-y-auto page-transition">
-          <ScanView />
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center h-full gap-2">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              <p className="text-xs text-gray-500">Loading chat...</p>
+            </div>
+          }>
+            <ScanView />
+          </Suspense>
         </div>
       </div>
     </div>

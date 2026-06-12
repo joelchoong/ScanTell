@@ -8,8 +8,23 @@ import { Toast } from "@/shared/components/Toast";
 function VerificationSentContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const type = searchParams.get("type"); // "registration" or "email-change"
   const [isResending, setIsResending] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(interval);
+  }, [countdown]);
 
   const handleResend = async () => {
     setIsResending(true);
@@ -24,6 +39,8 @@ function VerificationSentContent() {
 
       if (res.ok) {
         setMessage({ type: "success", text: "Verification email sent!" });
+        setCountdown(60);
+        setCanResend(false);
       } else {
         setMessage({ type: "error", text: data.error || "Failed to send email" });
       }
@@ -60,18 +77,18 @@ function VerificationSentContent() {
             Check your email
           </h1>
           <p className="text-gray-500 mb-6">
-            We've sent a verification link to{" "}
-            <span className="font-medium text-gray-700">{email || "your email"}</span>
-            . Click the link to verify your email address.
+            {type === "email-change"
+              ? "We've sent a verification link to your new email address. Click the link to confirm the change."
+              : "We've sent a verification link to your email address. Click the link to verify your account."}
           </p>
 
           <div className="space-y-3">
             <button
               onClick={handleResend}
-              disabled={isResending}
+              disabled={!canResend || isResending}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isResending ? "Sending..." : "Resend verification email"}
+              {isResending ? "Sending..." : canResend ? "Resend verification email" : `Resend in ${countdown}s`}
             </button>
 
             <Link

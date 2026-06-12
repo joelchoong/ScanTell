@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 export function ProfileSettingsForm() {
   const { data: session, update } = useSession();
-  const router = useRouter();
-  const [name, setName] = useState(session?.user?.name || "");
-  const [email, setEmail] = useState(session?.user?.email || "");
+  const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const hasChanges = name !== session?.user?.name || email !== session?.user?.email;
+  // Sync state when session finishes loading or updates using render-phase check
+  const [prevSessionName, setPrevSessionName] = useState("");
+  if (session?.user?.name && session.user.name !== prevSessionName) {
+    setPrevSessionName(session.user.name);
+    setName(session.user.name);
+  }
+
+  const hasChanges = name !== session?.user?.name;
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,34 +38,17 @@ export function ProfileSettingsForm() {
         }
       }
 
-      // Update email
-      if (email !== session?.user?.email) {
-        const res = await fetch("/api/user/update-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Failed to update email");
-        }
-      }
-
-      // Update session and refresh page
+      // Update session
       await update();
 
       setMessage({ type: "success", text: "Profile updated successfully" });
 
-      // Force page reload to get updated session data from database
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Reset form to current session data
+      setName(session?.user?.name || "");
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Something went wrong" });
       // Reset local state on error
       setName(session?.user?.name || "");
-      setEmail(session?.user?.email || "");
     } finally {
       setIsSaving(false);
     }
@@ -80,7 +67,7 @@ export function ProfileSettingsForm() {
       )}
 
       <form onSubmit={handleSaveProfile} className="space-y-4">
-        {/* Profile section - single card with both fields */}
+        {/* Profile section */}
         <div className="softui-card p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "#23262B" }}>
@@ -91,19 +78,6 @@ export function ProfileSettingsForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
-              className="softui-input"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: "#23262B" }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
               className="softui-input"
             />
           </div>

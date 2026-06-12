@@ -45,12 +45,11 @@ export async function POST(req: NextRequest) {
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Update email and reset verification status
+    // Store new email in pendingEmail field (don't change actual email yet)
     await prisma.user.update({
       where: { id: userId },
       data: {
-        email: email.toLowerCase(),
-        emailVerified: null,
+        pendingEmail: email.toLowerCase(),
         emailVerifiedToken: verificationToken,
         emailVerifiedTokenExpires: verificationTokenExpires,
       },

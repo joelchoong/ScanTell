@@ -11,7 +11,7 @@ import { colors } from "@/lib/design-system";
 import { Toast } from "@/shared/components/Toast";
 
 export default function EditProfilePage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -91,7 +91,7 @@ export default function EditProfilePage() {
           <p className="text-sm" style={{ color: "#23262B" }}>Manage your account preferences.</p>
 
           {/* Email verification banner */}
-          {session?.user?.emailVerified === null && (
+          {status !== "loading" && session?.user?.emailVerified === null && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
@@ -118,6 +118,22 @@ export default function EditProfilePage() {
           <div>
             <h2 className="text-sm font-semibold mb-4" style={{ color: "#121417" }}>Profile</h2>
             <ProfileSettingsForm />
+          </div>
+
+          {/* Change email section */}
+          <div className="softui-card p-6">
+            <h2 className="text-sm font-semibold mb-2" style={{ color: "#121417" }}>
+              Change email
+            </h2>
+            <p className="text-sm mb-4" style={{ color: "#23262B" }}>
+              Update your email address. We'll send a verification link to confirm the change.
+            </p>
+            <Link
+              href="/profile/edit-profile/change-email"
+              className="softui-btn inline-block"
+            >
+              Change email
+            </Link>
           </div>
 
           {/* Change password section */}

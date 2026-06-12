@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/shared/server/db";
 import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { invalidateUserCache } from "@/lib/sessionCache";
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,14 +54,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark email as verified and clear token
+    // If there's a pending email, move it to the email field
+    const updateData: any = {
+      emailVerified: new Date(),
+      emailVerifiedToken: null,
+      emailVerifiedTokenExpires: null,
+    };
+
+    if (user.pendingEmail) {
+      updateData.email = user.pendingEmail;
+      updateData.pendingEmail = null;
+    }
+
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        emailVerified: new Date(),
-        emailVerifiedToken: null,
-        emailVerifiedTokenExpires: null,
-      },
+      data: updateData,
     } as any);
+
+    // Invalidate cache to force refresh on next session callback
+    invalidateUserCache(user.id);
 
     return NextResponse.json(
       { success: true },
