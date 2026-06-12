@@ -53,12 +53,15 @@ export function ProfileSettingsForm() {
 
       setMessage({ type: "success", text: "Profile updated successfully" });
 
-      // Force page refresh to get updated session data
+      // Force page reload to get updated session data from database
       setTimeout(() => {
-        router.refresh();
+        window.location.reload();
       }, 500);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Something went wrong" });
+      // Reset local state on error
+      setName(session?.user?.name || "");
+      setEmail(session?.user?.email || "");
     } finally {
       setIsSaving(false);
     }

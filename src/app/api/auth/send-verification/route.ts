@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       to: user.email,
       subject: "Verify your ScanTell email",
       template: {
-        id: "401d8a5a-13ac-401b-8b5c-ffc4162541cd",
+        id: "c1773527-6d39-4a92-9a95-898bb2d0ccc1",
         variables: {
           token: verificationToken,
           verificationUrl: verificationUrl,

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         emailVerifiedToken: verificationToken,
         emailVerifiedTokenExpires: verificationTokenExpires,
       },
-    } as any);
+    });
 
     // Invalidate cache to force refresh on next session callback
     invalidateUserCache(userId);
