@@ -152,7 +152,14 @@ export async function POST(
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API Error Response:", errorText);
-      return NextResponse.json({ error: "Gemini analysis failed. Please try again." }, { status: 500 });
+      let errorMessage = "Gemini analysis failed. Please try again.";
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error?.message || errorText || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
+      }
+      return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 
     const result = await response.json();
