@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
@@ -32,6 +32,7 @@ export default function ExplorePage() {
   const [customFileName, setCustomFileName] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showChangeDropdown, setShowChangeDropdown] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -461,7 +462,16 @@ export default function ExplorePage() {
                   {/* Document Summary */}
                   {selectedDoc.summary && (
                     <div className="softui-card p-4 bg-blue-50/50 border border-blue-200">
-                      <p className="text-sm text-gray-700 leading-relaxed">{selectedDoc.summary}</p>
+                      <button
+                        onClick={() => setShowSummary(!showSummary)}
+                        className="w-full flex items-center justify-between text-left"
+                      >
+                        <span className="text-sm font-semibold text-gray-900">Document Summary</span>
+                        {showSummary ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                      </button>
+                      {showSummary && (
+                        <p className="text-sm text-gray-700 leading-relaxed mt-3">{selectedDoc.summary}</p>
+                      )}
                     </div>
                   )}
                   <h2 className={`${typography.sectionHeader} text-gray-900 mt-2`}>What happens if...?</h2>
