@@ -427,7 +427,7 @@ export default function ExplorePage() {
                   <AlertCircle className="w-10 h-10 text-orange-500" />
                   <div className="text-center">
                     <p className="text-orange-900 font-semibold">Unable to analyze document</p>
-                    <p className="text-orange-700 text-xs mt-1">This document may not be supported. Please upload an insurance document (PDF) to explore scenarios.</p>
+                    <p className="text-orange-700 text-xs mt-1">{processingError}</p>
                   </div>
                   <button
                     onClick={handleClearFile}

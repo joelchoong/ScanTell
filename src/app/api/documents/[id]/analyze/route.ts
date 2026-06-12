@@ -32,7 +32,7 @@ export async function POST(
     }
 
     // 2. If analysis already exists, return it without re-analyzing
-    if (doc.extractedText && doc.analysis) {
+    if (doc.analysis) {
       return NextResponse.json({ document: doc });
     }
 
@@ -92,7 +92,7 @@ export async function POST(
                   },
                 },
                 {
-                  text: "Analyze this document. First, determine if this is an insurance document. If it is not an insurance document, set isInsuranceDocument to false and leave other fields empty. If it is an insurance document, provide a brief 2-3 sentence summary of what the document covers, extract all readable text using OCR, and pull out key structured policy information like the insurer, type of policy, policy holder, list of coverage limits, and any exclusions.",
+                  text: "Analyze this document. First, determine if this is an insurance document. If it is not an insurance document, set isInsuranceDocument to false and leave other fields empty. If it is an insurance document, provide a brief 2-3 sentence summary of what the document covers and pull out key structured policy information like the insurer, type of policy, policy holder, list of coverage limits, and any exclusions. Do not include the full extracted text in the response - only the summary and structured data.",
                 },
               ],
             },
@@ -109,10 +109,6 @@ export async function POST(
                 summary: {
                   type: "STRING",
                   description: "Brief 2-3 sentence summary of what the document covers.",
-                },
-                extractedText: {
-                  type: "STRING",
-                  description: "Full text content extracted from the document using OCR.",
                 },
                 analysis: {
                   type: "OBJECT",
@@ -142,7 +138,7 @@ export async function POST(
                   required: ["insurer", "policyType", "policyHolder", "coverageLimits", "exclusions"],
                 },
               },
-              required: ["isInsuranceDocument", "summary", "extractedText", "analysis"],
+              required: ["isInsuranceDocument", "summary", "analysis"],
             },
           },
         }),
@@ -177,7 +173,6 @@ export async function POST(
       data: {
         isInsuranceDocument: parsedData.isInsuranceDocument,
         summary: parsedData.summary,
-        extractedText: parsedData.extractedText,
         analysis: parsedData.analysis,
       },
     });
@@ -185,8 +180,9 @@ export async function POST(
     return NextResponse.json({ document: updatedDoc });
   } catch (err) {
     console.error("[documents/analyze] error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
     return NextResponse.json(
-      { error: "An error occurred during analysis. Check server logs." },
+      { error: `Analysis error: ${errorMessage}` },
       { status: 500 }
     );
   }
