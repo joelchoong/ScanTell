@@ -3,7 +3,7 @@ import { put } from "@vercel/blob";
 import { prisma } from "@/shared/server/db";
 import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (reduced to account for base64 encoding overhead)
 
 export async function POST(req: NextRequest) {
   // Auth check
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // Size limit
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File size must be under 20MB." },
+        { error: "File size must be under 5MB." },
         { status: 400 }
       );
     }

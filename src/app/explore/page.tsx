@@ -257,6 +257,7 @@ export default function ExplorePage() {
                       onChange={handleFileChange}
                       className="hidden"
                     />
+                    <p className="text-xs text-gray-500 mt-2">Maximum file size: 5MB (PDF only)</p>
                     <div className="relative" ref={dropdownRef}>
                       <button
                         onClick={() => setShowDropdown(!showDropdown)}
