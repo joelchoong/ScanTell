@@ -14,6 +14,7 @@ interface DBDocument {
   fileUrl: string;
   fileSize: number;
   isInsuranceDocument?: boolean | null;
+  summary?: string | null;
   extractedText?: string | null;
   analysis?: any | null;
   createdAt: string;
@@ -456,6 +457,12 @@ export default function ExplorePage() {
               {/* Scenario Cards - Show when document is uploaded, analyzed, and is an insurance document */}
               {selectedDoc && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === true && (
                 <section className="space-y-4 pt-4">
+                  {/* Document Summary */}
+                  {selectedDoc.summary && (
+                    <div className="softui-card p-4 bg-blue-50/50 border border-blue-200">
+                      <p className="text-sm text-gray-700 leading-relaxed">{selectedDoc.summary}</p>
+                    </div>
+                  )}
                   <h2 className={`${typography.sectionHeader} text-gray-900 mt-2`}>What happens if...?</h2>
                   <div className="space-y-3">
                     <button

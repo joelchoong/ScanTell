@@ -92,7 +92,7 @@ export async function POST(
                   },
                 },
                 {
-                  text: "Analyze this document. First, determine if this is an insurance document. If it is not an insurance document, set isInsuranceDocument to false and leave other fields empty. If it is an insurance document, extract all readable text using OCR, and pull out key structured policy information like the insurer, type of policy, policy holder, list of coverage limits, and any exclusions.",
+                  text: "Analyze this document. First, determine if this is an insurance document. If it is not an insurance document, set isInsuranceDocument to false and leave other fields empty. If it is an insurance document, provide a brief 2-3 sentence summary of what the document covers, extract all readable text using OCR, and pull out key structured policy information like the insurer, type of policy, policy holder, list of coverage limits, and any exclusions.",
                 },
               ],
             },
@@ -105,6 +105,10 @@ export async function POST(
                 isInsuranceDocument: {
                   type: "BOOLEAN",
                   description: "Whether this document is an insurance document.",
+                },
+                summary: {
+                  type: "STRING",
+                  description: "Brief 2-3 sentence summary of what the document covers.",
                 },
                 extractedText: {
                   type: "STRING",
@@ -138,7 +142,7 @@ export async function POST(
                   required: ["insurer", "policyType", "policyHolder", "coverageLimits", "exclusions"],
                 },
               },
-              required: ["isInsuranceDocument", "extractedText", "analysis"],
+              required: ["isInsuranceDocument", "summary", "extractedText", "analysis"],
             },
           },
         }),
@@ -165,6 +169,7 @@ export async function POST(
       where: { id },
       data: {
         isInsuranceDocument: parsedData.isInsuranceDocument,
+        summary: parsedData.summary,
         extractedText: parsedData.extractedText,
         analysis: parsedData.analysis,
       },
