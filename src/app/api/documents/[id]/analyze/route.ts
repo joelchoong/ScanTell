@@ -177,7 +177,20 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ document: updatedDoc });
+    // 6. Retrieve relevant scenarios based on document type
+    let scenarios = [];
+    if (parsedData.isInsuranceDocument) {
+      // Use raw SQL to retrieve scenarios since Prisma client hasn't picked up the new model yet
+      const rawScenarios = await prisma.$queryRaw`
+        SELECT id, title, icon, query, "documentTypes", "usageCount"
+        FROM "Scenario"
+        WHERE "documentTypes" @> ARRAY['insurance']::text[]
+        ORDER BY "usageCount" DESC
+      `;
+      scenarios = rawScenarios as any[];
+    }
+
+    return NextResponse.json({ document: updatedDoc, scenarios });
   } catch (err) {
     console.error("[documents/analyze] error:", err);
     const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";

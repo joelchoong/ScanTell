@@ -75,5 +75,16 @@ model Document {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Scenario {
+  id          String   @id @default(cuid())
+  title       String
+  icon        String
+  query       String
+  documentTypes String[]
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // VerificationToken — add back when enabling magic link email auth
 // Authenticator    — add back when enabling WebAuthn / passkeys

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
@@ -18,6 +18,15 @@ interface DBDocument {
   extractedText?: string | null;
   analysis?: any | null;
   createdAt: string;
+}
+
+interface Scenario {
+  id: string;
+  title: string;
+  icon: string;
+  query: string;
+  documentTypes: string[];
+  usageCount: number;
 }
 
 export default function ExplorePage() {
@@ -33,10 +42,45 @@ export default function ExplorePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showChangeDropdown, setShowChangeDropdown] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [processingError, setProcessingError] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const changeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Icon mapping for scenarios
+  const getIcon = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      Stethoscope,
+      Heart,
+      Brain,
+      Building2,
+      Activity,
+      AlertTriangle,
+      FileText,
+      Pill,
+      User,
+      Smile,
+    };
+    return iconMap[iconName] || FileText;
+  };
+
+  // Color mapping for scenarios
+  const getIconColors = (iconName: string) => {
+    const colorMap: Record<string, { bg: string; icon: string }> = {
+      Stethoscope: { bg: "#fbeaf0", icon: "#993556" },
+      Heart: { bg: "#fcebeb", icon: "#a32d2d" },
+      Brain: { bg: "#e6f1fb", icon: "#185fa5" },
+      Building2: { bg: "#e1f5ee", icon: "#0f6e56" },
+      Activity: { bg: "#fef3c7", icon: "#92400e" },
+      AlertTriangle: { bg: "#fef2f2", icon: "#dc2626" },
+      FileText: { bg: "#f3f4f6", icon: "#4b5563" },
+      Pill: { bg: "#ecfdf5", icon: "#059669" },
+      User: { bg: "#eff6ff", icon: "#2563eb" },
+      Smile: { bg: "#fdf4ff", icon: "#9333ea" },
+    };
+    return colorMap[iconName] || { bg: "#f3f4f6", icon: "#4b5563" };
+  };
 
   // Load documents from actual endpoint
   const loadDocuments = async () => {
@@ -93,6 +137,7 @@ export default function ExplorePage() {
       }
       const data = await res.json();
       setSelectedDoc(data.document);
+      setScenarios(data.scenarios || []);
       setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
     } catch (err: any) {
       console.error(err);
@@ -476,57 +521,29 @@ export default function ExplorePage() {
                   )}
                   <h2 className={`${typography.sectionHeader} text-gray-900 mt-2`}>What happens if...?</h2>
                   <div className="space-y-3">
-                    <button
-                      onClick={() => handleScenarioClick("cancer")}
-                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fbeaf0]">
-                          <Stethoscope className="w-5 h-5 text-[#993556]" />
-                        </div>
-                        <span className="text-gray-900 font-medium">I am diagnosed with cancer</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    </button>
-
-                    <button
-                      onClick={() => handleScenarioClick("heart_attack")}
-                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fcebeb]">
-                          <Heart className="w-5 h-5 text-[#a32d2d]" />
-                        </div>
-                        <span className="text-gray-900 font-medium">I have a heart attack</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    </button>
-
-                    <button
-                      onClick={() => handleScenarioClick("stroke")}
-                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#e6f1fb]">
-                          <Brain className="w-5 h-5 text-[#185fa5]" />
-                        </div>
-                        <span className="text-gray-900 font-medium">I have a stroke</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    </button>
-
-                    <button
-                      onClick={() => handleScenarioClick("hospitalised")}
-                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#e1f5ee]">
-                          <Building2 className="w-5 h-5 text-[#0f6e56]" />
-                        </div>
-                        <span className="text-gray-900 font-medium">I am hospitalised</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    </button>
+                    {scenarios.length > 0 ? (
+                      scenarios.map((scenario) => {
+                        const Icon = getIcon(scenario.icon);
+                        const colors = getIconColors(scenario.icon);
+                        return (
+                          <button
+                            key={scenario.id}
+                            onClick={() => handleScenarioClick(scenario.id)}
+                            className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
+                                <Icon className="w-5 h-5" style={{ color: colors.icon }} />
+                              </div>
+                              <span className="text-gray-900 font-medium">{scenario.title}</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-gray-500">No scenarios available. Please analyze a document first.</p>
+                    )}
 
                     <button
                       onClick={() => handleScenarioClick("custom")}

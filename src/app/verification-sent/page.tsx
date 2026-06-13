@@ -56,9 +56,9 @@ function VerificationSentContent() {
       <div className="w-full max-w-md text-center">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-10">
           {/* Email icon */}
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF8E7]">
             <svg
-              className="h-8 w-8 text-blue-600"
+              className="h-8 w-8 text-[#D4AF37]"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -86,7 +86,7 @@ function VerificationSentContent() {
             <button
               onClick={handleResend}
               disabled={!canResend || isResending}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#D4AF37] text-white py-3 px-4 rounded-xl font-medium hover:bg-[#B8960C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isResending ? "Sending..." : canResend ? "Resend verification email" : `Resend in ${countdown}s`}
             </button>

@@ -73,6 +73,13 @@ export function LoginForm({
       return;
     }
 
+    // Check if user is verified
+    const session = await fetch("/api/auth/session").then(res => res.json());
+    if (!session?.user?.emailVerified) {
+      router.push(`/verification-sent?email=${encodeURIComponent(email)}`);
+      return;
+    }
+
     router.push(callbackUrl);
   };
 
