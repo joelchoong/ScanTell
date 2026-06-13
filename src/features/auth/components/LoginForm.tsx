@@ -76,6 +76,12 @@ export function LoginForm({
     // Check if user is verified
     const session = await fetch("/api/auth/session").then(res => res.json());
     if (!session?.user?.emailVerified) {
+      // Immediately send verification email
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
       router.push(`/verification-sent?email=${encodeURIComponent(email)}`);
       return;
     }

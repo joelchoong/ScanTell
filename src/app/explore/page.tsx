@@ -43,6 +43,9 @@ export default function ExplorePage() {
   const [showChangeDropdown, setShowChangeDropdown] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [scenarioAnswer, setScenarioAnswer] = useState<string | null>(null);
+  const [loadingScenario, setLoadingScenario] = useState(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -228,16 +231,60 @@ export default function ExplorePage() {
     setShowDropdown(false);
     setShowChangeDropdown(false);
     setProcessingError(null);
-    
+
     // If not yet analyzed, analyze now
     if (!doc.extractedText) {
       await runAnalysis(doc.id);
+    } else {
+      // Load scenarios for already analyzed documents
+      try {
+        const res = await fetch(`/api/documents/${doc.id}/scenarios`);
+        if (res.ok) {
+          const data = await res.json();
+          setScenarios(data.scenarios || []);
+        }
+      } catch (err) {
+        console.error("Failed to load scenarios:", err);
+      }
     }
   };
 
-  const handleScenarioClick = (scenarioType: string) => {
+  const handleScenarioClick = async (scenarioId: string) => {
     if (!selectedDoc) return;
-    router.push(`/chat?documentId=${selectedDoc.id}&scenario=${scenarioType}`);
+
+    // Custom scenario goes to chat
+    if (scenarioId === "custom") {
+      router.push(`/chat?documentId=${selectedDoc.id}&scenario=custom`);
+      return;
+    }
+
+    // Predefined scenarios show AI answer inline
+    const scenario = scenarios.find(s => s.id === scenarioId);
+    if (!scenario) return;
+
+    setSelectedScenario(scenario);
+    setLoadingScenario(true);
+    setScenarioAnswer(null);
+
+    try {
+      const res = await fetch(`/api/documents/${selectedDoc.id}/scenario-answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: scenario.query }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to get scenario answer");
+      }
+
+      const data = await res.json();
+      setScenarioAnswer(data.answer);
+    } catch (err) {
+      console.error(err);
+      setScenarioAnswer("Failed to get answer. Please try again.");
+    } finally {
+      setLoadingScenario(false);
+    }
   };
 
   const formatDate = (isoString?: string) => {
@@ -561,6 +608,40 @@ export default function ExplorePage() {
                       <ChevronRight className="w-4 h-4 text-gray-400" />
                     </button>
                   </div>
+
+                  {/* Scenario Answer Section */}
+                  {selectedScenario && (
+                    <div className="softui-card p-4 bg-[#FFF8E7]/50 border border-[#D4AF37]/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const Icon = getIcon(selectedScenario.icon);
+                            const colors = getIconColors(selectedScenario.icon);
+                            return (
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
+                                <Icon className="w-4 h-4" style={{ color: colors.icon }} />
+                              </div>
+                            );
+                          })()}
+                          <span className="text-sm font-semibold text-gray-900">{selectedScenario.title}</span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedScenario(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {loadingScenario ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Analyzing your policy...</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700 leading-relaxed">{scenarioAnswer}</p>
+                      )}
+                    </div>
+                  )}
                 </section>
               )}
 
