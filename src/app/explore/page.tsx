@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
@@ -25,6 +25,7 @@ interface Scenario {
   title: string;
   icon: string;
   query: string;
+  description?: string;
   documentTypes: string[];
   usageCount: number;
 }
@@ -47,6 +48,8 @@ export default function ExplorePage() {
   const [scenarioAnswer, setScenarioAnswer] = useState<string | null>(null);
   const [loadingScenario, setLoadingScenario] = useState(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [selectedDescription, setSelectedDescription] = useState<{ title: string; description: string } | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const changeDropdownRef = useRef<HTMLDivElement>(null);
@@ -64,6 +67,14 @@ export default function ExplorePage() {
       Pill,
       User,
       Smile,
+      Scissors,
+      Leaf,
+      Globe,
+      Plane,
+      Clock,
+      MapPin,
+      TrendingUp,
+      AlertCircle,
     };
     return iconMap[iconName] || FileText;
   };
@@ -284,6 +295,16 @@ export default function ExplorePage() {
 
     // Custom scenario goes to chat
     if (scenarioId === "custom") {
+      // Log the custom question before redirecting
+      try {
+        await fetch('/api/user-questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: 'Custom question', documentId: selectedDoc.id }),
+        });
+      } catch (err) {
+        console.error('Failed to log custom question:', err);
+      }
       router.push(`/chat?documentId=${selectedDoc.id}&scenario=custom`);
       return;
     }
@@ -323,6 +344,13 @@ export default function ExplorePage() {
       setScenarioAnswer("Failed to get answer. Please try again.");
     } finally {
       setLoadingScenario(false);
+    }
+  };
+
+  const handleShowDescription = (scenario: Scenario) => {
+    if (scenario.description) {
+      setSelectedDescription({ title: scenario.title, description: scenario.description });
+      setShowDescriptionModal(true);
     }
   };
 
@@ -610,21 +638,33 @@ export default function ExplorePage() {
                     {scenarios.length > 0 ? (
                       scenarios.map((scenario) => {
                         const Icon = getIcon(scenario.icon);
-                        const colors = getIconColors(scenario.icon);
                         return (
-                          <button
-                            key={scenario.id}
-                            onClick={() => handleScenarioClick(scenario.id)}
-                            className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
-                                <Icon className="w-5 h-5" style={{ color: colors.icon }} />
+                          <div key={scenario.id} className="softui-card p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-yellow-100">
+                                <Icon className="w-5 h-5 text-yellow-700" />
                               </div>
-                              <span className="text-gray-900 font-medium">{scenario.title}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-900 font-medium">{scenario.title}</span>
+                                  <button
+                                    onClick={() => handleScenarioClick(scenario.id)}
+                                    className="p-1 hover:bg-gray-100 rounded"
+                                  >
+                                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                                  </button>
+                                </div>
+                                {scenario.description && (
+                                  <button
+                                    onClick={() => handleShowDescription(scenario)}
+                                    className="text-xs text-gray-600 hover:text-gray-900 underline mt-1 text-left"
+                                  >
+                                    See details
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-gray-500" />
-                          </button>
+                          </div>
                         );
                       })
                     ) : (
@@ -763,6 +803,22 @@ export default function ExplorePage() {
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Description Modal */}
+      {showDescriptionModal && selectedDescription && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{selectedDescription.title}</h3>
+            <p className="text-sm text-gray-600 mb-4">{selectedDescription.description}</p>
+            <button
+              onClick={() => setShowDescriptionModal(false)}
+              className="w-full px-4 py-3 rounded-lg bg-yellow-500 text-white font-medium hover:bg-yellow-600 transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

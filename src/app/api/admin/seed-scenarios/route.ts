@@ -5,63 +5,31 @@ import { Prisma } from "@prisma/client";
 
 const commonInsuranceScenarios = [
   {
-    title: "I am diagnosed with cancer",
-    icon: "Stethoscope",
-    query: "What coverage do I have if I'm diagnosed with cancer?",
+    title: "Annual vs Lifetime Limits",
+    icon: "TrendingUp",
+    query: "What are the annual and lifetime coverage limits? How much does the insurance pay each year vs across my lifetime?",
+    description: "Understand how much your insurance pays each year vs across your lifetime, and why this affects long-term medical coverage.",
     documentTypes: ["insurance", "health"],
   },
   {
-    title: "I have a heart attack",
-    icon: "Heart",
-    query: "What coverage do I have if I have a heart attack?",
+    title: "What Can Delay or Reject Claims",
+    icon: "AlertCircle",
+    query: "What conditions can delay or reject my claims? What are the waiting periods and pre-approval requirements?",
+    description: "Learn about waiting periods, pre-approvals, and other conditions that may slow down, reduce, or reject your claim.",
     documentTypes: ["insurance", "health"],
   },
   {
-    title: "I have a stroke",
-    icon: "Brain",
-    query: "What coverage do I have if I have a stroke?",
+    title: "Surgeries Not Covered",
+    icon: "Scissors",
+    query: "What types of surgeries are NOT covered? Are cosmetic, elective, or non-medically necessary procedures excluded?",
+    description: "Find out which types of surgeries are usually excluded, such as cosmetic, elective, or non-medically necessary procedures.",
     documentTypes: ["insurance", "health"],
   },
   {
-    title: "I am hospitalised",
-    icon: "Building2",
-    query: "What coverage do I have if I'm hospitalised?",
-    documentTypes: ["insurance", "health"],
-  },
-  {
-    title: "I need surgery",
-    icon: "Activity",
-    query: "What coverage do I have if I need surgery?",
-    documentTypes: ["insurance", "health"],
-  },
-  {
-    title: "I need emergency treatment",
-    icon: "AlertTriangle",
-    query: "What coverage do I have for emergency treatment?",
-    documentTypes: ["insurance", "health"],
-  },
-  {
-    title: "I need diagnostic tests",
-    icon: "FileText",
-    query: "What coverage do I have for diagnostic tests like MRI or CT scans?",
-    documentTypes: ["insurance", "health"],
-  },
-  {
-    title: "I need prescription medication",
-    icon: "Pill",
-    query: "What coverage do I have for prescription medications?",
-    documentTypes: ["insurance", "health"],
-  },
-  {
-    title: "I need specialist consultation",
-    icon: "User",
-    query: "What coverage do I have for specialist consultations?",
-    documentTypes: ["insurance", "health"],
-  },
-  {
-    title: "I need mental health treatment",
-    icon: "Smile",
-    query: "What coverage do I have for mental health treatment?",
+    title: "Does Your Coverage Change Over Time?",
+    icon: "Clock",
+    query: "How do premiums increase with age? Can my coverage or policy terms change after I make a claim?",
+    description: "See how premiums increase with age and whether your coverage or policy terms can change after you make a claim.",
     documentTypes: ["insurance", "health"],
   },
 ];
@@ -74,15 +42,20 @@ export async function POST(req: NextRequest) {
   try {
     console.log("Seeding scenarios using raw SQL...");
 
+    // Delete existing scenarios first
+    console.log("Deleting existing scenarios...");
+    await prisma.$executeRaw`DELETE FROM "Scenario"`;
+
     for (const scenario of commonInsuranceScenarios) {
       console.log("Inserting scenario:", scenario.title);
       await prisma.$executeRaw`
-        INSERT INTO "Scenario" (id, title, icon, query, "documentTypes", "usageCount", "createdAt", "updatedAt")
+        INSERT INTO "Scenario" (id, title, icon, query, description, "documentTypes", "usageCount", "createdAt", "updatedAt")
         VALUES (
           gen_random_uuid(),
           ${scenario.title},
           ${scenario.icon},
           ${scenario.query},
+          ${scenario.description},
           ${scenario.documentTypes},
           0,
           NOW(),

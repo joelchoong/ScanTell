@@ -15,12 +15,13 @@ export async function GET(
   try {
     console.log("[documents/scenarios] Fetching scenarios for document:", id);
 
-    // Simply return all insurance scenarios
+    // Simply return top 4 insurance scenarios
     const scenarios = await prisma.$queryRaw`
-      SELECT id, title, icon, query, "documentTypes", "usageCount"
+      SELECT id, title, icon, query, description, "documentTypes", "usageCount"
       FROM "Scenario"
       WHERE "documentTypes" @> ARRAY['insurance']::text[]
       ORDER BY "usageCount" DESC
+      LIMIT 4
     `;
 
     console.log("[documents/scenarios] Retrieved scenarios:", scenarios);

@@ -37,10 +37,11 @@ export async function POST(
       let scenarios = [];
       if (doc.isInsuranceDocument) {
         const rawScenarios = await prisma.$queryRaw`
-          SELECT id, title, icon, query, "documentTypes", "usageCount"
+          SELECT id, title, icon, query, description, "documentTypes", "usageCount"
           FROM "Scenario"
           WHERE "documentTypes" @> ARRAY['insurance']::text[]
           ORDER BY "usageCount" DESC
+          LIMIT 4
         `;
         scenarios = rawScenarios as any[];
       }
@@ -195,10 +196,11 @@ export async function POST(
     if (parsedData.isInsuranceDocument) {
       // Use raw SQL to retrieve scenarios since Prisma client hasn't picked up the new model yet
       const rawScenarios = await prisma.$queryRaw`
-        SELECT id, title, icon, query, "documentTypes", "usageCount"
+        SELECT id, title, icon, query, description, "documentTypes", "usageCount"
         FROM "Scenario"
         WHERE "documentTypes" @> ARRAY['insurance']::text[]
         ORDER BY "usageCount" DESC
+        LIMIT 4
       `;
       scenarios = rawScenarios as any[];
       scenarioIds = (rawScenarios as any[]).map((s: any) => s.id);
