@@ -33,7 +33,18 @@ export async function POST(
 
     // 2. If analysis already exists, return it without re-analyzing
     if (doc.analysis) {
-      return NextResponse.json({ document: doc });
+      // Fetch scenarios for already analyzed documents
+      let scenarios = [];
+      if (doc.isInsuranceDocument) {
+        const rawScenarios = await prisma.$queryRaw`
+          SELECT id, title, icon, query, "documentTypes", "usageCount"
+          FROM "Scenario"
+          WHERE "documentTypes" @> ARRAY['insurance']::text[]
+          ORDER BY "usageCount" DESC
+        `;
+        scenarios = rawScenarios as any[];
+      }
+      return NextResponse.json({ document: doc, scenarios });
     }
 
     // 2. Ensure GEMINI_API_KEY is available
@@ -179,6 +190,8 @@ export async function POST(
 
     // 6. Retrieve relevant scenarios based on document type
     let scenarios = [];
+    let scenarioIds = [];
+    console.log("[documents/analyze] isInsuranceDocument:", parsedData.isInsuranceDocument);
     if (parsedData.isInsuranceDocument) {
       // Use raw SQL to retrieve scenarios since Prisma client hasn't picked up the new model yet
       const rawScenarios = await prisma.$queryRaw`
@@ -188,7 +201,18 @@ export async function POST(
         ORDER BY "usageCount" DESC
       `;
       scenarios = rawScenarios as any[];
+      scenarioIds = (rawScenarios as any[]).map((s: any) => s.id);
+      console.log("[documents/analyze] Retrieved scenarios:", scenarios.length);
+    } else {
+      console.log("[documents/analyze] Not an insurance document, not returning scenarios");
     }
+
+    // 7. Save scenario IDs to document using raw SQL
+    await prisma.$executeRaw`
+      UPDATE "Document"
+      SET "scenarioIds" = ${scenarioIds}::text[]
+      WHERE id = ${id}
+    `;
 
     return NextResponse.json({ document: updatedDoc, scenarios });
   } catch (err) {

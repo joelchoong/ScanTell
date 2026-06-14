@@ -13,27 +13,17 @@ export async function GET(
   const { id } = await params;
 
   try {
-    // Fetch document to check if it's an insurance document
-    const doc = await prisma.document.findFirst({
-      where: { id, userId },
-    });
+    console.log("[documents/scenarios] Fetching scenarios for document:", id);
 
-    if (!doc) {
-      return NextResponse.json({ error: "Document not found." }, { status: 404 });
-    }
-
-    // If not an insurance document, return empty scenarios
-    if (!doc.isInsuranceDocument) {
-      return NextResponse.json({ scenarios: [] });
-    }
-
-    // Retrieve relevant scenarios based on document type
+    // Simply return all insurance scenarios
     const scenarios = await prisma.$queryRaw`
       SELECT id, title, icon, query, "documentTypes", "usageCount"
       FROM "Scenario"
       WHERE "documentTypes" @> ARRAY['insurance']::text[]
       ORDER BY "usageCount" DESC
     `;
+
+    console.log("[documents/scenarios] Retrieved scenarios:", scenarios);
 
     return NextResponse.json({ scenarios });
   } catch (err) {

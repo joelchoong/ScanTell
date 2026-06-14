@@ -28,4 +28,7 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  // Temporarily disable caching to pick up new schema changes
+  // globalForPrisma.prisma = prisma;
+}

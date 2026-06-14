@@ -18,22 +18,40 @@ export async function POST(
   }
 
   try {
-    // 1. Fetch document metadata from database
-    const doc = await prisma.document.findFirst({
-      where: { id, userId },
-    });
+    console.log("[documents/scenario-answer] Fetching document:", id);
 
-    if (!doc) {
+    // 1. Fetch document metadata from database using raw SQL
+    const docs = await prisma.$queryRaw`
+      SELECT id, analysis, "scenarioAnswers"
+      FROM "Document"
+      WHERE id = ${id} AND "userId" = ${userId}
+    `;
+
+    if (!docs || (docs as any[]).length === 0) {
+      console.error("[documents/scenario-answer] Document not found");
       return NextResponse.json({ error: "Document not found." }, { status: 404 });
     }
 
+    const doc = (docs as any[])[0];
+
+    console.log("[documents/scenario-answer] Document found, has analysis:", !!doc.analysis);
+
     if (!doc.analysis) {
+      console.error("[documents/scenario-answer] Document has no analysis");
       return NextResponse.json({ error: "Document has not been analyzed yet." }, { status: 400 });
     }
 
-    // 2. Call Gemini API to answer the scenario question
+    // 2. Check if answer is already cached
+    const scenarioAnswers = doc.scenarioAnswers as Record<string, string> | null;
+    if (scenarioAnswers && scenarioAnswers[query]) {
+      console.log("[documents/scenario-answer] Returning cached answer");
+      return NextResponse.json({ answer: scenarioAnswers[query] });
+    }
+
+    // 3. Call Gemini API to answer the scenario question
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error("[documents/scenario-answer] GEMINI_API_KEY not configured");
       return NextResponse.json(
         { error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your .env file." },
         { status: 400 }
@@ -57,6 +75,8 @@ Provide a clear, concise answer that explains:
 Keep your answer under 200 words and use simple, easy-to-understand language.
 `;
 
+    console.log("[documents/scenario-answer] Calling Gemini API...");
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
@@ -78,14 +98,37 @@ Keep your answer under 200 words and use simple, easy-to-understand language.
       }
     );
 
+    console.log("[documents/scenario-answer] Gemini API response status:", response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[documents/scenario-answer] Gemini API error:", errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+
+      if (response.status === 429) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded. Please try again in a few minutes." },
+          { status: 429 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: `Gemini API error: ${response.status} - ${errorText}` },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from AI";
+
+    console.log("[documents/scenario-answer] Successfully got answer, caching it");
+
+    // 4. Cache the answer
+    const updatedAnswers = { ...(scenarioAnswers || {}), [query]: responseText };
+    await prisma.$executeRaw`
+      UPDATE "Document"
+      SET "scenarioAnswers" = ${JSON.stringify(updatedAnswers)}::jsonb
+      WHERE id = ${id}
+    `;
 
     return NextResponse.json({ answer: responseText });
   } catch (err) {

@@ -110,6 +110,14 @@ export default function ExplorePage() {
           handleSelectDocument(found);
         }
       } else {
+        // Restore selected document from localStorage
+        const savedDocId = localStorage.getItem('selectedDocumentId');
+        if (savedDocId && docs.length > 0) {
+          const found = docs.find((d: any) => d.id === savedDocId);
+          if (found) {
+            handleSelectDocument(found);
+          }
+        }
         // Fallback to file/url parameters if present
         const fileParam = searchParams.get('file');
         const urlParam = searchParams.get('url');
@@ -128,22 +136,29 @@ export default function ExplorePage() {
   };
 
   const runAnalysis = async (docId: string) => {
+    console.log("runAnalysis called for docId:", docId);
     setIsProcessing(true);
     setProcessingError(null);
     try {
       const res = await fetch(`/api/documents/${docId}/analyze`, {
         method: "POST"
       });
+      console.log("Analysis response status:", res.status);
       if (!res.ok) {
         const errData = await res.json();
+        console.error("Analysis error:", errData);
         throw new Error(errData.error || "Failed to analyze document.");
       }
       const data = await res.json();
+      console.log("Analysis response data:", data);
+      console.log("Analysis response scenarios:", data.scenarios);
+      console.log("Analysis response scenarios length:", data.scenarios?.length);
       setSelectedDoc(data.document);
       setScenarios(data.scenarios || []);
+      console.log("Scenarios set from analysis:", data.scenarios || []);
       setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
     } catch (err: any) {
-      console.error(err);
+      console.error("Analysis error:", err);
       setProcessingError(err.message || "Analysis failed.");
     } finally {
       setIsProcessing(false);
@@ -226,25 +241,40 @@ export default function ExplorePage() {
   };
 
   const handleSelectDocument = async (doc: DBDocument) => {
+    console.log("handleSelectDocument called with doc:", doc);
     setSelectedDoc(doc);
     setCustomFileName(doc.name);
     setShowDropdown(false);
     setShowChangeDropdown(false);
     setProcessingError(null);
 
+    // Save selected document ID to localStorage for persistence
+    localStorage.setItem('selectedDocumentId', doc.id);
+
     // If not yet analyzed, analyze now
     if (!doc.extractedText) {
+      console.log("Document not analyzed, running analysis");
       await runAnalysis(doc.id);
     } else {
       // Load scenarios for already analyzed documents
       try {
+        console.log("Loading scenarios for document:", doc.id);
         const res = await fetch(`/api/documents/${doc.id}/scenarios`);
+        console.log("Scenarios response status:", res.status);
         if (res.ok) {
           const data = await res.json();
+          console.log("Scenarios data:", data);
           setScenarios(data.scenarios || []);
+          console.log("Scenarios state set to:", data.scenarios || []);
+        } else {
+          console.error("Failed to load scenarios, re-analyzing document");
+          // If scenarios endpoint fails, re-analyze the document
+          await runAnalysis(doc.id);
         }
       } catch (err) {
         console.error("Failed to load scenarios:", err);
+        // If there's an error, try re-analyzing
+        await runAnalysis(doc.id);
       }
     }
   };
@@ -267,20 +297,29 @@ export default function ExplorePage() {
     setScenarioAnswer(null);
 
     try {
+      console.log("Fetching scenario answer for:", scenario.id, scenario.query);
       const res = await fetch(`/api/documents/${selectedDoc.id}/scenario-answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: scenario.query }),
       });
 
+      console.log("Scenario answer response status:", res.status);
       if (!res.ok) {
-        throw new Error("Failed to get scenario answer");
-      }
+        const errorData = await res.json();
+        console.error("Scenario answer error:", errorData);
 
-      const data = await res.json();
-      setScenarioAnswer(data.answer);
+        if (res.status === 429) {
+          setScenarioAnswer("Rate limit exceeded. Please try again in a few minutes.");
+        } else {
+          setScenarioAnswer(errorData.error || "Failed to get answer. Please try again.");
+        }
+      } else {
+        const data = await res.json();
+        setScenarioAnswer(data.answer);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Scenario click error:", err);
       setScenarioAnswer("Failed to get answer. Please try again.");
     } finally {
       setLoadingScenario(false);
