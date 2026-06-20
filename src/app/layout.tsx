@@ -14,11 +14,53 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ScanTell",
-  description: "ScanTell web app",
+  title: "ScanTell – Understand Your Documents Instantly",
+  description:
+    "ScanTell uses OCR and AI to extract, summarise, and explain important information from your documents. Start with insurance policies and quickly understand what matters most without reading the full document.",
+
+  keywords: [
+    "OCR app",
+    "document scanner",
+    "insurance document scanner",
+    "AI document summarizer",
+    "policy explanation",
+    "document AI",
+    "scan and extract text",
+    "insurance clarity app",
+  ],
+
+  authors: [{ name: "ScanTell" }],
+
+  openGraph: {
+    title: "ScanTell – Understand Your Documents Instantly",
+    description:
+      "Upload documents and instantly get key insights, summaries, and explanations. Built for insurance policies and important paperwork.",
+    url: "https://scantell.vercel.app"",
+    siteName: "ScanTell",
+    type: "website",
+    images: [
+      {
+        url: "/scantell-logo-horizontal.png",
+        width: 1200,
+        height: 630,
+        alt: "ScanTell - Document understanding made simple",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "ScanTell – Understand Your Documents Instantly",
+    description:
+      "AI-powered OCR that extracts and explains key info from insurance and important documents.",
+    images: ["/scantell-logo-horizontal.png"],
+  },
+
   icons: {
     icon: "/scantell.svg",
   },
+
+  metadataBase: new URL("https://scantell.vercel.app"),
 };
 
 export default function RootLayout({
