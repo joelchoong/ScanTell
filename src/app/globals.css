@@ -48,6 +48,26 @@ body {
   border: none;
 }
 
+.softui-card-interactive {
+  background: var(--bg);
+  border-radius: 1.5rem;
+  box-shadow: var(--raised);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.softui-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 16px #bebee6, -6px -6px 16px #ffffff;
+}
+
+.softui-card-interactive:active {
+  transform: translateY(1px);
+  box-shadow: var(--inset);
+}
+
 .softui-input {
   width: 100%;
   padding: 0.75rem 1rem;

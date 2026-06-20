@@ -3,9 +3,8 @@
 import { useRef, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
-import { TopHeader } from "@/features/dashboard/components/TopHeader";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
@@ -52,8 +51,11 @@ export default function ExplorePage() {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [selectedDescription, setSelectedDescription] = useState<{ title: string; description: string } | null>(null);
 
+  const [showMenuDropdown, setShowMenuDropdown] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const changeDropdownRef = useRef<HTMLDivElement>(null);
+  const menuDropdownRef = useRef<HTMLDivElement>(null);
 
   // Icon mapping for scenarios
   const getIcon = (iconName: string) => {
@@ -325,60 +327,11 @@ export default function ExplorePage() {
       return;
     }
 
-    // Predefined scenarios show AI answer inline
+    // Predefined scenarios route to scenario page
     const scenario = scenarios.find(s => s.id === scenarioId);
     if (!scenario) return;
 
-    setSelectedScenario(scenario);
-
-    // Check if we have a valid cached answer in local state
-    const scenarioAnswers = selectedDoc.scenarioAnswers as Record<string, string> | null;
-    const cachedAnswer = scenarioAnswers?.[scenario.query] || scenarioAnswers?.[scenario.id];
-    
-    const isValidCachedAnswer = cachedAnswer && cachedAnswer !== "Answer not available. Please re-analyze the document.";
-
-    if (isValidCachedAnswer) {
-      setScenarioAnswer(cachedAnswer);
-      setLoadingScenario(false);
-    } else {
-      setLoadingScenario(true);
-      setScenarioAnswer(null);
-      try {
-        const res = await fetch(`/api/documents/${selectedDoc.id}/scenario-answer`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: scenario.query,
-            scenarioId: scenario.id,
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setScenarioAnswer(data.answer);
-          
-          // Update the selectedDoc and documents state with the new answer
-          const updatedAnswers = {
-            ...(selectedDoc.scenarioAnswers as Record<string, string> || {}),
-            [scenario.query]: data.answer,
-            [scenario.id]: data.answer,
-          };
-          const updatedDoc = {
-            ...selectedDoc,
-            scenarioAnswers: updatedAnswers,
-          };
-          setSelectedDoc(updatedDoc);
-          setDocuments(prev => prev.map(d => d.id === selectedDoc.id ? updatedDoc : d));
-        } else {
-          setScenarioAnswer("Failed to generate answer. Please try again.");
-        }
-      } catch (err) {
-        console.error("Failed to get scenario answer:", err);
-        setScenarioAnswer("Failed to generate answer. Please try again.");
-      } finally {
-        setLoadingScenario(false);
-      }
-    }
+    router.push(`/explore/scenario?id=${scenario.id}&documentId=${selectedDoc.id}`);
   };
 
   const handleShowDescription = (scenario: Scenario) => {
@@ -406,6 +359,9 @@ export default function ExplorePage() {
       if (changeDropdownRef.current && !changeDropdownRef.current.contains(event.target as Node)) {
         setShowChangeDropdown(false);
       }
+      if (menuDropdownRef.current && !menuDropdownRef.current.contains(event.target as Node)) {
+        setShowMenuDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -426,10 +382,116 @@ export default function ExplorePage() {
       </div>
 
       <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: "transparent" }}>
-        <TopHeader />
+        {/* Header - document context aware */}
+        {selectedDoc ? (
+          <header className="px-6 pt-6 pb-4 sticky top-0 z-20" style={{ background: colors.primary.solid }}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
+                    <FileText className="w-4 h-4" style={{ color: colors.primary.base }} />
+                  </div>
+                  <h1 className="text-base font-bold text-gray-900 truncate">{selectedDoc.name}</h1>
+                </div>
+                {selectedDoc.summary && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === true && (
+                  <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">{selectedDoc.summary}</p>
+                )}
+              </div>
+              {/* 3-dot menu */}
+              <div className="relative" ref={menuDropdownRef}>
+                <button
+                  onClick={() => setShowMenuDropdown(!showMenuDropdown)}
+                  className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors flex-shrink-0 mt-0.5"
+                >
+                  <MoreVertical className="w-5 h-5 text-gray-600" />
+                </button>
+                {showMenuDropdown && (
+                  <div className="absolute top-full right-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
+                    <button
+                      onClick={() => { handleViewDocument(); setShowMenuDropdown(false); }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Eye className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">View Document</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowRenameModal(true); setShowMenuDropdown(false); }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                    >
+                      <Pencil className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Rename</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowChangeDropdown(true); setShowMenuDropdown(false); }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                    >
+                      <RefreshCw className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Change Document</span>
+                    </button>
+                    <button
+                      onClick={() => { handleClearFile(); setShowMenuDropdown(false); }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-100"
+                    >
+                      <X className="w-4 h-4 text-red-400" />
+                      <span className="text-sm font-medium text-red-500">Deselect Document</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Change document dropdown overlay */}
+            {showChangeDropdown && (
+              <div className="mt-3" ref={changeDropdownRef}>
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                  {documents.filter(doc => doc.id !== selectedDoc.id).map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => handleSelectDocument(doc)}
+                      className="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
+                        <FileText className="w-4 h-4" style={{ color: colors.primary.base }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{formatDate(doc.createdAt)}</p>
+                      </div>
+                    </button>
+                  ))}
+                  {documents.filter(doc => doc.id !== selectedDoc.id).length === 0 && (
+                    <div className="p-4 text-center">
+                      <p className="text-sm text-gray-500">No other documents</p>
+                    </div>
+                  )}
+                  <div className="border-t border-gray-200">
+                    <button
+                      onClick={handleUploadClick}
+                      className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Upload new document</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </header>
+        ) : (
+          <header className="flex items-center justify-center px-6 py-5 sticky top-0 z-20" style={{ background: colors.primary.solid }}>
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/scantell-logo-horizontal.svg"
+                alt="ScanTell"
+                width={140}
+                height={40}
+                priority
+              />
+            </div>
+          </header>
+        )}
 
         <main className="px-6 overflow-y-auto flex-1 page-transition">
-          <div className="space-y-6 pt-1">
+          <div className="space-y-6 pt-4">
             <div className="space-y-0">
               {/* Upload Section - Hidden when file is selected */}
               {!selectedDoc && (
@@ -466,7 +528,6 @@ export default function ExplorePage() {
                       </button>
                       {showDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10">
-                          {/* Documents list */}
                           {documents.length > 0 ? (
                             <>
                               {documents.map((doc) => (
@@ -496,7 +557,6 @@ export default function ExplorePage() {
                             </>
                           ) : (
                             <>
-                              {/* Empty state dropdown */}
                               <div className="p-4 text-center">
                                 <p className="text-sm font-medium text-gray-900">No documents yet</p>
                                 <p className="text-xs text-gray-500 mt-1">Upload one to get started</p>
@@ -516,87 +576,6 @@ export default function ExplorePage() {
                       )}
                     </div>
                   </div>
-                  <div
-                    className="absolute -right-8 -bottom-8 w-36 h-36 rounded-full"
-                    style={{ backgroundColor: colors.primary.rgba[15] }}
-                  />
-                </section>
-              )}
-
-              {/* Selected Document Display */}
-              {selectedDoc && (
-                <section
-                  className="rounded-[2rem] p-5 relative shadow-sm"
-                  style={{ backgroundColor: colors.background.base }}
-                >
-                  <button
-                    onClick={handleClearFile}
-                    className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 z-20"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                  <div className="relative z-10 pr-24">
-                    <h1 className="text-[18px] font-bold text-gray-900 leading-tight truncate mb-4 cursor-pointer hover:underline" onClick={() => setShowRenameModal(true)}>
-                      {selectedDoc.name}
-                    </h1>
-                    <div className="relative" ref={changeDropdownRef}>
-                      <button
-                        onClick={() => setShowChangeDropdown(!showChangeDropdown)}
-                        className="transition-colors text-black text-[13px] font-semibold px-4 py-2 rounded-full inline-flex items-center justify-center gap-2 hover:opacity-90"
-                        style={{
-                          background: colors.primary.gradient,
-                          boxShadow: colors.shadows.gold,
-                        }}
-                      >
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showChangeDropdown ? 'rotate-180' : ''}`} />
-                        Change Document
-                      </button>
-                      {showChangeDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10">
-                          {documents.filter(doc => doc.id !== selectedDoc.id).map((doc) => (
-                            <button
-                              key={doc.id}
-                              onClick={() => handleSelectDocument(doc)}
-                              className="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
-                            >
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
-                                <FileText className="w-4 h-4" style={{ color: colors.primary.base }} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
-                                <p className="text-xs text-gray-500">{formatDate(doc.createdAt)}</p>
-                              </div>
-                            </button>
-                          ))}
-                          {documents.filter(doc => doc.id !== selectedDoc.id).length === 0 && (
-                            <div className="p-4 text-center">
-                              <p className="text-sm text-gray-500">No other documents</p>
-                            </div>
-                          )}
-                          <div className="border-t border-gray-200">
-                            <button
-                              onClick={handleUploadClick}
-                              className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                            >
-                              <Plus className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm font-medium text-gray-700">Upload new document</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleViewDocument}
-                    className="absolute top-1/2 -translate-y-1/2 right-12 transition-colors text-black text-[13px] font-semibold px-4 py-2 rounded-full inline-flex items-center justify-center gap-2 hover:opacity-90"
-                    style={{
-                      background: colors.primary.gradient,
-                      boxShadow: colors.shadows.gold,
-                    }}
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    View
-                  </button>
                   <div
                     className="absolute -right-8 -bottom-8 w-36 h-36 rounded-full"
                     style={{ backgroundColor: colors.primary.rgba[15] }}
@@ -651,54 +630,43 @@ export default function ExplorePage() {
 
               {/* Scenario Cards - Show when document is uploaded, analyzed, and is an insurance document */}
               {selectedDoc && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === true && (
-                <section className="space-y-4 pt-4">
-                  {/* Document Summary */}
-                  {selectedDoc.summary && (
-                    <div className="softui-card p-4 bg-blue-50/50 border border-blue-200">
-                      <button
-                        onClick={() => setShowSummary(!showSummary)}
-                        className="w-full flex items-center justify-between text-left"
-                      >
-                        <span className="text-sm font-semibold text-gray-900">Document Summary</span>
-                        {showSummary ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
-                      </button>
-                      {showSummary && (
-                        <p className="text-sm text-gray-700 leading-relaxed mt-3">{selectedDoc.summary}</p>
-                      )}
-                    </div>
-                  )}
+                <section className="space-y-4">
                   <h2 className={`${typography.sectionHeader} text-gray-900 mt-2`}>What happens if...?</h2>
                   <div className="space-y-3">
                     {scenarios.length > 0 ? (
                       scenarios.map((scenario) => {
                         const Icon = getIcon(scenario.icon);
                         return (
-                          <div key={scenario.id} className="softui-card p-4">
+                          <button
+                            key={scenario.id}
+                            onClick={() => handleScenarioClick(scenario.id)}
+                            className="w-full text-left softui-card-interactive p-4 block"
+                          >
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-yellow-100">
                                 <Icon className="w-5 h-5 text-yellow-700" />
                               </div>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-900 font-medium">{scenario.title}</span>
-                                  <button
-                                    onClick={() => handleScenarioClick(scenario.id)}
-                                    className="p-1 hover:bg-gray-100 rounded"
-                                  >
-                                    <ChevronRight className="w-4 h-4 text-gray-500" />
-                                  </button>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-gray-900 font-medium truncate">{scenario.title}</span>
+                                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                 </div>
                                 {scenario.description && (
-                                  <button
-                                    onClick={() => handleShowDescription(scenario)}
-                                    className="text-xs text-gray-600 hover:text-gray-900 underline mt-1 text-left"
-                                  >
-                                    See details
-                                  </button>
+                                  <div className="mt-1">
+                                    <span
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleShowDescription(scenario);
+                                      }}
+                                      className="text-xs text-gray-500 hover:text-gray-900 underline cursor-pointer inline-block"
+                                    >
+                                      See details
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
-                          </div>
+                          </button>
                         );
                       })
                     ) : (
@@ -707,7 +675,7 @@ export default function ExplorePage() {
 
                     <button
                       onClick={() => handleScenarioClick("custom")}
-                      className="w-full text-left softui-card p-4 flex items-center justify-between hover:shadow-md transition-shadow border-1.5 border-dashed border-gray-300 bg-transparent"
+                      className="w-full text-left softui-card p-4 flex items-center justify-between border-1.5 border-dashed border-gray-300 bg-transparent transition-all duration-150 hover:translate-y-[-2px] active:translate-y-[1px]"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-100">
