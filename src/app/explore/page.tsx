@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw, ArrowLeft, Sheild, Shield } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw, ArrowLeft, Shield } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
