@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { colors, typography } from "@/lib/design-system";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw, ArrowLeft, Sheild, Shield } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
@@ -34,7 +34,7 @@ export default function ExplorePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const [documents, setDocuments] = useState<DBDocument[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<DBDocument | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -124,14 +124,6 @@ export default function ExplorePage() {
           handleSelectDocument(found);
         }
       } else {
-        // Restore selected document from localStorage
-        const savedDocId = localStorage.getItem('selectedDocumentId');
-        if (savedDocId && docs.length > 0) {
-          const found = docs.find((d: any) => d.id === savedDocId);
-          if (found) {
-            handleSelectDocument(found);
-          }
-        }
         // Fallback to file/url parameters if present
         const fileParam = searchParams.get('file');
         const urlParam = searchParams.get('url');
@@ -199,28 +191,28 @@ export default function ExplorePage() {
     if (file) {
       setIsProcessing(true);
       setProcessingError(null);
-      
+
       try {
         const formData = new FormData();
         formData.append("file", file);
-        
+
         const uploadRes = await fetch("/api/documents/upload", {
           method: "POST",
           body: formData,
         });
-        
+
         if (!uploadRes.ok) {
           const errData = await uploadRes.json();
           throw new Error(errData.error || "Upload failed.");
         }
-        
+
         const uploadData = await uploadRes.json();
         const newDoc = uploadData.document;
-        
+
         await loadDocuments();
         setSelectedDoc(newDoc);
         setCustomFileName(newDoc.name);
-        
+
         // Trigger analysis automatically
         await runAnalysis(newDoc.id);
       } catch (err: any) {
@@ -276,9 +268,6 @@ export default function ExplorePage() {
     setShowDropdown(false);
     setShowChangeDropdown(false);
     setProcessingError(null);
-
-    // Save selected document ID to localStorage for persistence
-    localStorage.setItem('selectedDocumentId', doc.id);
 
     // If not yet analyzed, analyze now
     if (!doc.extractedText) {
@@ -386,16 +375,39 @@ export default function ExplorePage() {
         {selectedDoc ? (
           <header className="px-6 pt-6 pb-4 sticky top-0 z-20" style={{ background: colors.primary.solid }}>
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${colors.primary.base}33` }}>
-                    <FileText className="w-4 h-4" style={{ color: colors.primary.base }} />
-                  </div>
-                  <h1 className="text-base font-bold text-gray-900 truncate">{selectedDoc.name}</h1>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={handleClearFile}
+                  aria-label="Back to Explore"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-black/5 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 text-gray-700" />
+                </button>
+
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-base font-bold text-gray-900 truncate">
+                    {selectedDoc.name}
+                  </h1>
+
+                  {!isProcessing &&
+                    !processingError &&
+                    selectedDoc.isInsuranceDocument === true && (
+                      <div className="mt-1">
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                          style={{
+                            backgroundColor: `${colors.primary.base}20`,
+                            color: colors.primary.dark,
+                            borderColor: `${colors.primary.base}30`,
+                          }}
+                        >
+                          <Shield className="w-3 h-3" />
+                          Insurance document
+                        </span>
+                      </div>
+                    )}
                 </div>
-                {selectedDoc.summary && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === true && (
-                  <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">{selectedDoc.summary}</p>
-                )}
               </div>
               {/* 3-dot menu */}
               <div className="relative" ref={menuDropdownRef}>
@@ -407,6 +419,16 @@ export default function ExplorePage() {
                 </button>
                 {showMenuDropdown && (
                   <div className="absolute top-full right-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-30">
+                    {selectedDoc.summary && !isProcessing && !processingError && selectedDoc.isInsuranceDocument === true && (
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+                          Description
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {selectedDoc.summary}
+                        </p>
+                      </div>
+                    )}
                     <button
                       onClick={() => { handleViewDocument(); setShowMenuDropdown(false); }}
                       className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"

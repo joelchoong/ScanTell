@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { FileText, Calendar, MoreVertical, Pencil, Trash2, Loader2 } from "lucide-react";
 import { colors, typography } from "@/lib/design-system";
+import Link from "next/link";
 
 interface Document {
   id: string;
@@ -139,24 +140,29 @@ export function UploadedDocuments() {
               key={doc.id}
               className="softui-card p-4 flex items-center gap-4"
             >
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${colors.primary.base}33` }}
+              <Link
+                href={`/explore?id=${doc.id}`}
+                className="flex min-w-0 flex-1 items-center gap-4"
               >
-                <FileText className="w-5 h-5" style={{ color: colors.primary.base }} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <h3 className={`${typography.bodyPrimary} text-gray-900 truncate`}>
-                  {doc.name}
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="w-3 h-3 text-gray-400" />
-                  <p className={`${typography.caption} text-gray-500`}>
-                    {formatDate(doc.createdAt)} · {formatSize(doc.fileSize)}
-                  </p>
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${colors.primary.base}33` }}
+                >
+                  <FileText className="w-5 h-5" style={{ color: colors.primary.base }} />
                 </div>
-              </div>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className={`${typography.bodyPrimary} text-gray-900 truncate`}>
+                    {doc.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Calendar className="w-3 h-3 text-gray-400" />
+                    <p className={`${typography.caption} text-gray-500`}>
+                      {formatDate(doc.createdAt)} · {formatSize(doc.fileSize)}
+                    </p>
+                  </div>
+                </div>
+              </Link>
 
               <div
                 className="relative"
