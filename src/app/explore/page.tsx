@@ -17,6 +17,7 @@ interface DBDocument {
   summary?: string | null;
   extractedText?: string | null;
   analysis?: any | null;
+  scenarioAnswers?: any | null;
   createdAt: string;
 }
 
@@ -156,18 +157,33 @@ export default function ExplorePage() {
       });
       console.log("Analysis response status:", res.status);
       if (!res.ok) {
-        const errData = await res.json();
-        console.error("Analysis error:", errData);
-        throw new Error(errData.error || "Failed to analyze document.");
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errData = await res.json();
+          console.error("Analysis error:", errData);
+          const errorMsg = errData.error?.message || errData.error || "Failed to analyze document.";
+          throw new Error(errorMsg);
+        } else {
+          const text = await res.text();
+          console.error("Analysis error (non-JSON):", text.substring(0, 200));
+          throw new Error("Failed to analyze document. Server returned non-JSON response.");
+        }
       }
-      const data = await res.json();
-      console.log("Analysis response data:", data);
-      console.log("Analysis response scenarios:", data.scenarios);
-      console.log("Analysis response scenarios length:", data.scenarios?.length);
-      setSelectedDoc(data.document);
-      setScenarios(data.scenarios || []);
-      console.log("Scenarios set from analysis:", data.scenarios || []);
-      setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        console.log("Analysis response data:", data);
+        console.log("Analysis response scenarios:", data.scenarios);
+        console.log("Analysis response scenarios length:", data.scenarios?.length);
+        setSelectedDoc(data.document);
+        setScenarios(data.scenarios || []);
+        console.log("Scenarios set from analysis:", data.scenarios || []);
+        setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
+      } else {
+        const text = await res.text();
+        console.error("Analysis response (non-JSON):", text.substring(0, 200));
+        throw new Error("Failed to analyze document. Server returned non-JSON response.");
+      }
     } catch (err: any) {
       console.error("Analysis error:", err);
       setProcessingError(err.message || "Analysis failed.");
@@ -314,36 +330,54 @@ export default function ExplorePage() {
     if (!scenario) return;
 
     setSelectedScenario(scenario);
-    setLoadingScenario(true);
-    setScenarioAnswer(null);
 
-    try {
-      console.log("Fetching scenario answer for:", scenario.id, scenario.query);
-      const res = await fetch(`/api/documents/${selectedDoc.id}/scenario-answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: scenario.query }),
-      });
+    // Check if we have a valid cached answer in local state
+    const scenarioAnswers = selectedDoc.scenarioAnswers as Record<string, string> | null;
+    const cachedAnswer = scenarioAnswers?.[scenario.query] || scenarioAnswers?.[scenario.id];
+    
+    const isValidCachedAnswer = cachedAnswer && cachedAnswer !== "Answer not available. Please re-analyze the document.";
 
-      console.log("Scenario answer response status:", res.status);
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("Scenario answer error:", errorData);
-
-        if (res.status === 429) {
-          setScenarioAnswer("Rate limit exceeded. Please try again in a few minutes.");
-        } else {
-          setScenarioAnswer(errorData.error || "Failed to get answer. Please try again.");
-        }
-      } else {
-        const data = await res.json();
-        setScenarioAnswer(data.answer);
-      }
-    } catch (err) {
-      console.error("Scenario click error:", err);
-      setScenarioAnswer("Failed to get answer. Please try again.");
-    } finally {
+    if (isValidCachedAnswer) {
+      setScenarioAnswer(cachedAnswer);
       setLoadingScenario(false);
+    } else {
+      setLoadingScenario(true);
+      setScenarioAnswer(null);
+      try {
+        const res = await fetch(`/api/documents/${selectedDoc.id}/scenario-answer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: scenario.query,
+            scenarioId: scenario.id,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setScenarioAnswer(data.answer);
+          
+          // Update the selectedDoc and documents state with the new answer
+          const updatedAnswers = {
+            ...(selectedDoc.scenarioAnswers as Record<string, string> || {}),
+            [scenario.query]: data.answer,
+            [scenario.id]: data.answer,
+          };
+          const updatedDoc = {
+            ...selectedDoc,
+            scenarioAnswers: updatedAnswers,
+          };
+          setSelectedDoc(updatedDoc);
+          setDocuments(prev => prev.map(d => d.id === selectedDoc.id ? updatedDoc : d));
+        } else {
+          setScenarioAnswer("Failed to generate answer. Please try again.");
+        }
+      } catch (err) {
+        console.error("Failed to get scenario answer:", err);
+        setScenarioAnswer("Failed to generate answer. Please try again.");
+      } finally {
+        setLoadingScenario(false);
+      }
     }
   };
 

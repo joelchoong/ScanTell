@@ -22,7 +22,7 @@ export async function POST(
   const { id } = await params;
 
   try {
-    // 1. Fetch document metadata from database
+    // 1. Fetch document metadata
     const doc = await prisma.document.findFirst({
       where: { id, userId },
     });
@@ -31,10 +31,10 @@ export async function POST(
       return NextResponse.json({ error: "Document not found." }, { status: 404 });
     }
 
-    // 2. If analysis already exists, return it without re-analyzing
-    if (doc.analysis) {
-      // Fetch scenarios for already analyzed documents
-      let scenarios = [];
+    // 2. Skip if already analyzed (both analysis metadata and extractedText must exist)
+    if (doc.analysis && doc.extractedText) {
+      let scenarios: any[] = [];
+
       if (doc.isInsuranceDocument) {
         const rawScenarios = await prisma.$queryRaw`
           SELECT id, title, icon, query, description, "documentTypes", "usageCount"
@@ -45,54 +45,54 @@ export async function POST(
         `;
         scenarios = rawScenarios as any[];
       }
+
       return NextResponse.json({ document: doc, scenarios });
     }
 
-    // 2. Ensure GEMINI_API_KEY is available
+    // 3. Env checks
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your .env file." },
+        { error: "GEMINI_API_KEY missing" },
         { status: 400 }
       );
     }
 
-    // 3. Fetch file from Vercel Blob with authentication
     const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
     if (!blobToken) {
-      return NextResponse.json({ error: "BLOB_READ_WRITE_TOKEN is not configured" }, { status: 500 });
+      return NextResponse.json(
+        { error: "BLOB_READ_WRITE_TOKEN missing" },
+        { status: 500 }
+      );
     }
 
-    let fileResponse: Response;
-    try {
-      fileResponse = await fetch(doc.fileUrl, {
-        headers: {
-          Authorization: `Bearer ${blobToken}`,
-        },
-      });
-    } catch (fetchError) {
-      console.error(`Network error fetching file from url: ${doc.fileUrl}`, fetchError);
-      return NextResponse.json({ error: `Network error accessing storage: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}` }, { status: 500 });
-    }
+    // 4. Fetch file
+    const fileResponse = await fetch(doc.fileUrl, {
+      headers: {
+        Authorization: `Bearer ${blobToken}`,
+      },
+    });
 
     if (!fileResponse.ok) {
       const errorText = await fileResponse.text();
-      console.error(`Failed to fetch file from url: ${doc.fileUrl}`, fileResponse.status, fileResponse.statusText, errorText);
-      return NextResponse.json({ error: `Failed to download document from storage (HTTP ${fileResponse.status}): ${fileResponse.statusText}` }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: `Failed to fetch file: ${fileResponse.status} ${errorText}`,
+        },
+        { status: 500 }
+      );
     }
 
     const fileBuffer = await fileResponse.arrayBuffer();
     const base64Data = Buffer.from(fileBuffer).toString("base64");
     const mimeType = getMimeType(doc.name);
 
-    // 4. Send to Gemini Multimodal
-    const response = await fetch(
+    // 5. Gemini document analysis
+    const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [
             {
@@ -104,7 +104,8 @@ export async function POST(
                   },
                 },
                 {
-                  text: "Analyze this document. First, determine if this is an insurance document. If it is not an insurance document, set isInsuranceDocument to false and leave other fields empty. If it is an insurance document, provide a brief 2-3 sentence summary of what the document covers and pull out key structured policy information like the insurer, type of policy, policy holder, list of coverage limits, and any exclusions. Do not include the full extracted text in the response - only the summary and structured data.",
+                  text:
+                    "Analyze this document. Extract all readable text (OCR) from the document and return it in the extractedText field, along with the structured analysis.",
                 },
               ],
             },
@@ -121,6 +122,10 @@ export async function POST(
                 summary: {
                   type: "STRING",
                   description: "Brief 2-3 sentence summary of what the document covers.",
+                },
+                extractedText: {
+                  type: "STRING",
+                  description: "All readable text extracted from the document (OCR).",
                 },
                 analysis: {
                   type: "OBJECT",
@@ -150,51 +155,47 @@ export async function POST(
                   required: ["insurer", "policyType", "policyHolder", "coverageLimits", "exclusions"],
                 },
               },
-              required: ["isInsuranceDocument", "summary", "analysis"],
+              required: ["isInsuranceDocument", "summary", "extractedText", "analysis"],
             },
           },
         }),
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API Error Response:", errorText);
-      let errorMessage = "Gemini analysis failed. Please try again.";
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.error?.message || errorText || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
-      }
-      return NextResponse.json({ error: errorMessage }, { status: 500 });
+    if (!geminiRes.ok) {
+      const err = await geminiRes.text();
+      return NextResponse.json({ error: err }, { status: 500 });
     }
 
-    const result = await response.json();
-    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    const geminiData = await geminiRes.json();
+    const responseText =
+      geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!responseText) {
-      return NextResponse.json({ error: "No response from Gemini analyzer." }, { status: 500 });
+      return NextResponse.json(
+        { error: "No Gemini response" },
+        { status: 500 }
+      );
     }
 
     const parsedData = JSON.parse(responseText);
 
-    // 5. Save results to the database
+    // 6. Save base analysis
     const updatedDoc = await prisma.document.update({
       where: { id },
       data: {
         isInsuranceDocument: parsedData.isInsuranceDocument,
         summary: parsedData.summary,
+        extractedText: parsedData.extractedText || "",
         analysis: parsedData.analysis,
       },
     });
 
-    // 6. Retrieve relevant scenarios based on document type
-    let scenarios = [];
-    let scenarioIds = [];
-    console.log("[documents/analyze] isInsuranceDocument:", parsedData.isInsuranceDocument);
+    // 7. Load scenarios
+    let scenarios: any[] = [];
+    let scenarioIds: string[] = [];
+
     if (parsedData.isInsuranceDocument) {
-      // Use raw SQL to retrieve scenarios since Prisma client hasn't picked up the new model yet
       const rawScenarios = await prisma.$queryRaw`
         SELECT id, title, icon, query, description, "documentTypes", "usageCount"
         FROM "Scenario"
@@ -202,26 +203,111 @@ export async function POST(
         ORDER BY "usageCount" DESC
         LIMIT 4
       `;
+
       scenarios = rawScenarios as any[];
-      scenarioIds = (rawScenarios as any[]).map((s: any) => s.id);
-      console.log("[documents/analyze] Retrieved scenarios:", scenarios.length);
-    } else {
-      console.log("[documents/analyze] Not an insurance document, not returning scenarios");
+      scenarioIds = scenarios.map((s) => s.id);
     }
 
-    // 7. Save scenario IDs to document using raw SQL
     await prisma.$executeRaw`
       UPDATE "Document"
       SET "scenarioIds" = ${scenarioIds}::text[]
       WHERE id = ${id}
     `;
 
-    return NextResponse.json({ document: updatedDoc, scenarios });
+    // 8. SINGLE Gemini call for ALL scenario answers
+    let scenarioAnswers: Record<string, string> = {};
+
+    if (parsedData.isInsuranceDocument && scenarios.length > 0) {
+      const contextText = parsedData.extractedText || JSON.stringify(parsedData.analysis, null, 2);
+      const batchPrompt = `
+You are an insurance expert.
+
+Return ONLY JSON in this format:
+
+{
+  "answers": {
+    "question": "answer"
+  }
+}
+
+Rules:
+- Keys must match questions EXACTLY
+- Max 200 words per answer
+- If unknown: "Not specified in policy"
+
+Policy Text:
+${contextText}
+
+Questions to answer (please use the EXACT question as the key in the "answers" object):
+${scenarios.map((s, i) => `${i + 1}. ${s.query}`).join("\n")}
+`;
+
+      const batchRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: batchPrompt }],
+              },
+            ],
+            generationConfig: {
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      );
+
+      if (batchRes.ok) {
+        const data = await batchRes.json();
+        const text =
+          data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (text) {
+          const parsed = JSON.parse(text);
+          const rawAnswers = parsed.answers || {};
+
+          // Map both query text and scenario ID for maximum compatibility
+          for (const scenario of scenarios) {
+            const matchedKey = Object.keys(rawAnswers).find(
+              key => key.toLowerCase().trim() === scenario.query.toLowerCase().trim()
+            );
+            const answer = matchedKey ? rawAnswers[matchedKey] : null;
+            if (answer) {
+              scenarioAnswers[scenario.query] = answer;
+              scenarioAnswers[scenario.id] = answer;
+            }
+          }
+        }
+      }
+    }
+
+    // 9. Save scenario answers and retrieve final document
+    let finalDoc = updatedDoc;
+    if (Object.keys(scenarioAnswers).length > 0) {
+      finalDoc = await prisma.document.update({
+        where: { id },
+        data: {
+          scenarioAnswers: scenarioAnswers as any,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      document: finalDoc,
+      scenarios,
+    });
+
   } catch (err) {
     console.error("[documents/analyze] error:", err);
-    const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+
     return NextResponse.json(
-      { error: `Analysis error: ${errorMessage}` },
+      {
+        error:
+          err instanceof Error ? err.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

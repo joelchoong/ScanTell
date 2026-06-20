@@ -11,126 +11,103 @@ export async function POST(
   const { userId } = authResult;
 
   const { id } = await params;
-  const { query } = await req.json();
+  const { query, scenarioId } = await req.json();
 
   if (!query) {
     return NextResponse.json({ error: "Query is required" }, { status: 400 });
   }
 
   try {
-    console.log("[documents/scenario-answer] Fetching document:", id);
+    // Fetch document from database
+    const doc = await prisma.document.findFirst({
+      where: { id, userId },
+      select: {
+        id: true,
+        extractedText: true,
+        analysis: true,
+        scenarioAnswers: true,
+      },
+    });
 
-    // 1. Fetch document metadata from database using raw SQL
-    const docs = await prisma.$queryRaw`
-      SELECT id, analysis, "scenarioAnswers"
-      FROM "Document"
-      WHERE id = ${id} AND "userId" = ${userId}
-    `;
-
-    if (!docs || (docs as any[]).length === 0) {
-      console.error("[documents/scenario-answer] Document not found");
-      return NextResponse.json({ error: "Document not found." }, { status: 404 });
+    if (!doc) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    const doc = (docs as any[])[0];
-
-    console.log("[documents/scenario-answer] Document found, has analysis:", !!doc.analysis);
-
-    if (!doc.analysis) {
-      console.error("[documents/scenario-answer] Document has no analysis");
-      return NextResponse.json({ error: "Document has not been analyzed yet." }, { status: 400 });
-    }
-
-    // 2. Check if answer is already cached
     const scenarioAnswers = doc.scenarioAnswers as Record<string, string> | null;
-    if (scenarioAnswers && scenarioAnswers[query]) {
-      console.log("[documents/scenario-answer] Returning cached answer");
-      return NextResponse.json({ answer: scenarioAnswers[query] });
-    }
+    let answer = scenarioAnswers?.[query] || (scenarioId ? scenarioAnswers?.[scenarioId] : null);
 
-    // 3. Call Gemini API to answer the scenario question
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error("[documents/scenario-answer] GEMINI_API_KEY not configured");
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured in environment variables. Please add it to your .env file." },
-        { status: 400 }
-      );
-    }
-
-    const prompt = `
-You are an insurance policy expert. Based on the following insurance policy analysis, answer the user's question.
-
-Policy Analysis:
-${JSON.stringify(doc.analysis, null, 2)}
-
-User Question: ${query}
-
-Provide a clear, concise answer that explains:
-1. Whether this scenario is covered or not
-2. What the coverage limits are (if applicable)
-3. Any conditions or exclusions that apply
-4. What the user should do or expect in this situation
-
-Keep your answer under 200 words and use simple, easy-to-understand language.
-`;
-
-    console.log("[documents/scenario-answer] Calling Gemini API...");
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
-
-    console.log("[documents/scenario-answer] Gemini API response status:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[documents/scenario-answer] Gemini API error:", errorText);
-
-      if (response.status === 429) {
+    // If answer is not cached or is the generic fallback error string, generate it on-the-fly
+    const isInvalidAnswer = !answer || answer === "Answer not available. Please re-analyze the document.";
+    
+    if (isInvalidAnswer) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
         return NextResponse.json(
-          { error: "Rate limit exceeded. Please try again in a few minutes." },
-          { status: 429 }
+          { error: "GEMINI_API_KEY is not configured." },
+          { status: 500 }
         );
       }
 
-      return NextResponse.json(
-        { error: `Gemini API error: ${response.status} - ${errorText}` },
-        { status: response.status }
+      const contextText = doc.extractedText || JSON.stringify(doc.analysis, null, 2);
+      const prompt = `You are an insurance expert. Answer the following question based on the policy context below.
+Limit your response to at most 200 words. Be clear, concise, and accurate. If the information is not specified in the policy, answer "Not specified in policy".
+
+Policy Context:
+${contextText}
+
+Question:
+${query}`;
+
+      console.log(`[scenario-answer] Generating dynamic answer using Gemini for document ${id}...`);
+
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+        }
       );
+
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text();
+        console.error("[scenario-answer] Gemini API Error:", errText);
+        throw new Error("Failed to generate response from Gemini API");
+      }
+
+      const geminiData = await geminiRes.json();
+      answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!answer) {
+        answer = "Answer not specified in policy.";
+      }
+
+      // Save the newly generated answer to the database
+      const updatedAnswers: Record<string, string> = {
+        ...(scenarioAnswers || {}),
+        [query]: answer,
+      };
+      if (scenarioId) {
+        updatedAnswers[scenarioId] = answer;
+      }
+
+      await prisma.document.update({
+        where: { id },
+        data: {
+          scenarioAnswers: updatedAnswers as any,
+        },
+      });
+      
+      console.log(`[scenario-answer] Successfully saved dynamic answer for document ${id}.`);
     }
 
-    const data = await response.json();
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from AI";
-
-    console.log("[documents/scenario-answer] Successfully got answer, caching it");
-
-    // 4. Cache the answer
-    const updatedAnswers = { ...(scenarioAnswers || {}), [query]: responseText };
-    await prisma.$executeRaw`
-      UPDATE "Document"
-      SET "scenarioAnswers" = ${JSON.stringify(updatedAnswers)}::jsonb
-      WHERE id = ${id}
-    `;
-
-    return NextResponse.json({ answer: responseText });
+    return NextResponse.json({ answer });
   } catch (err) {
     console.error("[documents/scenario-answer] error:", err);
     const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
@@ -140,3 +117,4 @@ Keep your answer under 200 words and use simple, easy-to-understand language.
     );
   }
 }
+
