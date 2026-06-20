@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     title: "ScanTell – Understand Your Documents Instantly",
     description:
       "Upload documents and instantly get key insights, summaries, and explanations. Built for insurance policies and important paperwork.",
-    url: "https://scantell.vercel.app"",
+    url: "https://scantell.vercel.app",
     siteName: "ScanTell",
     type: "website",
     images: [
