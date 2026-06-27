@@ -30,16 +30,6 @@ interface GroupedLine {
   }[];
 }
 
-// Accent color palette for alternating row tints
-const ROW_ACCENTS = [
-  { dot: "#F5B301", bg: "rgba(245,179,1,0.07)" },
-  { dot: "#3b82f6", bg: "rgba(59,130,246,0.06)" },
-  { dot: "#10b981", bg: "rgba(16,185,129,0.06)" },
-  { dot: "#8b5cf6", bg: "rgba(139,92,246,0.06)" },
-  { dot: "#f97316", bg: "rgba(249,115,22,0.06)" },
-  { dot: "#ec4899", bg: "rgba(236,72,153,0.06)" },
-];
-
 const INITIAL_VISIBLE = 5;
 
 function classifyLine(label: string, value: string): ParsedLine["type"] {
@@ -190,10 +180,8 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
   const visibleGroups = needsCollapse && !expanded ? groups.slice(0, INITIAL_VISIBLE) : groups;
   const hiddenCount = groups.length - INITIAL_VISIBLE;
 
-  let accentIndex = 0;
-
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {visibleGroups.map((group, i) => {
         if (group.type === "header") {
           return (
@@ -202,15 +190,16 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
                 className="w-1.5 h-4 rounded-full"
                 style={{ backgroundColor: accentColor || "#F5B301" }}
               />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-gray-500">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[#6b6050]">
                 {group.label}
               </span>
             </div>
           );
         }
 
-        const accent = ROW_ACCENTS[accentIndex % ROW_ACCENTS.length];
-        accentIndex++;
+        const isGoldAccent = ["currency", "limit", "duration", "header"].includes(group.type);
+        const iconBg = isGoldAccent ? "rgba(245, 179, 1, 0.15)" : "rgba(90, 90, 106, 0.12)";
+        const iconColor = isGoldAccent ? "#d49800" : "#5a5a6a";
         const TypeIcon = getTypeIcon(group.type);
         const isSingle = group.items.length === 1;
 
@@ -222,23 +211,23 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
         return (
           <div
             key={i}
-            className="flex items-start gap-3 rounded-xl px-3.5 py-2.5 transition-all duration-200"
-            style={{ backgroundColor: accent.bg }}
+            className="flex items-start gap-3 rounded-xl px-3.5 py-3 transition-all duration-200"
+            style={{ backgroundColor: "#f2ece0" }}
           >
             {/* Group Icon */}
             <div
               className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-              style={{ backgroundColor: `${accent.dot}20` }}
+              style={{ backgroundColor: iconBg }}
             >
-              <TypeIcon className="w-3 h-3" style={{ color: accent.dot }} />
+              <TypeIcon className="w-3.5 h-3.5" style={{ color: iconColor }} />
             </div>
 
             {/* Group Content */}
             <div className="flex-1 min-w-0">
               {/* Header area with label and consolidated page badge */}
-              <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex items-start justify-between gap-2 mb-1.5">
                 {group.label && (
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide leading-tight">
+                  <p className="text-[11px] font-bold text-[#6b6050] uppercase tracking-wide leading-tight">
                     {group.label}
                   </p>
                 )}
@@ -247,9 +236,9 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
                     {uniquePageRefs.map((ref, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-md text-gray-500 bg-black/5"
+                        className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-md text-[#6b6050] bg-[#e8e3d9]"
                       >
-                        <FileText className="w-2.5 h-2.5 flex-shrink-0 text-gray-400" />
+                        <FileText className="w-2.5 h-2.5 flex-shrink-0 text-[#6b6050]" />
                         {ref}
                       </span>
                     ))}
@@ -258,7 +247,7 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
               </div>
 
               {isSingle ? (
-                <p className="text-[13px] font-semibold text-gray-900 leading-snug">
+                <p className="text-[13px] font-semibold text-[#121417] leading-snug">
                   {group.items[0].value || "—"}
                 </p>
               ) : (
@@ -266,7 +255,7 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
                   {group.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start text-[13px] leading-relaxed text-gray-800 font-semibold"
+                      className="flex items-start text-[13px] leading-relaxed text-[#121417] font-semibold"
                     >
                       <span className="text-gray-400 mr-1.5 select-none">•</span>
                       <span>{item.value}</span>

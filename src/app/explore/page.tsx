@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { colors, typography } from "@/lib/design-system";
 import AnswerRenderer from "@/features/explore/components/AnswerRenderer";
-import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw, ArrowLeft, Shield } from "lucide-react";
+import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw, ArrowLeft, Shield, Info } from "lucide-react";
 import Image from "next/image";
 
 interface DBDocument {
@@ -83,21 +83,29 @@ export default function ExplorePage() {
     return iconMap[iconName] || FileText;
   };
 
-  // Color mapping for scenarios
+  // Color mapping for scenarios — dark gold or graphite based on category
   const getIconColors = (iconName: string) => {
-    const colorMap: Record<string, { bg: string; icon: string }> = {
-      Stethoscope: { bg: "#fbeaf0", icon: "#993556" },
-      Heart: { bg: "#fcebeb", icon: "#a32d2d" },
-      Brain: { bg: "#e6f1fb", icon: "#185fa5" },
-      Building2: { bg: "#e1f5ee", icon: "#0f6e56" },
-      Activity: { bg: "#fef3c7", icon: "#92400e" },
-      AlertTriangle: { bg: "#fef2f2", icon: "#dc2626" },
-      FileText: { bg: "#f3f4f6", icon: "#4b5563" },
-      Pill: { bg: "#ecfdf5", icon: "#059669" },
-      User: { bg: "#eff6ff", icon: "#2563eb" },
-      Smile: { bg: "#fdf4ff", icon: "#9333ea" },
-    };
-    return colorMap[iconName] || { bg: "#f3f4f6", icon: "#4b5563" };
+    const isGold = [
+      "Stethoscope",
+      "Heart",
+      "Brain",
+      "Activity",
+      "Pill",
+      "Smile",
+      "User",
+      "Scissors",
+      "Leaf",
+      "Globe",
+      "Plane",
+      "TrendingUp",
+      "Clock",
+      "AlertCircle"
+    ].includes(iconName);
+
+    if (isGold) {
+      return { bg: "rgba(245, 179, 1, 0.15)", icon: "#d49800" };
+    }
+    return { bg: "rgba(90, 90, 106, 0.12)", icon: "#5a5a6a" };
   };
 
   // Load documents from actual endpoint
@@ -659,37 +667,40 @@ export default function ExplorePage() {
                     {scenarios.length > 0 ? (
                       scenarios.map((scenario) => {
                         const Icon = getIcon(scenario.icon);
+                        const iconColors = getIconColors(scenario.icon);
                         return (
-                          <button
+                          <div
                             key={scenario.id}
                             onClick={() => handleScenarioClick(scenario.id)}
-                            className="w-full text-left softui-card-interactive p-4 block"
+                            className="w-full text-left softui-card-interactive p-4 block cursor-pointer"
                           >
                             <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-yellow-100">
-                                <Icon className="w-5 h-5 text-yellow-700" />
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: iconColors.bg }}
+                              >
+                                <Icon className="w-5 h-5" style={{ color: iconColors.icon }} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-gray-900 font-medium truncate">{scenario.title}</span>
-                                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className="text-gray-900 font-semibold text-sm leading-snug">{scenario.title}</span>
+                                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                                 </div>
                                 {scenario.description && (
-                                  <div className="mt-1">
-                                    <span
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleShowDescription(scenario);
-                                      }}
-                                      className="text-xs text-gray-500 hover:text-gray-900 underline cursor-pointer inline-block"
-                                    >
-                                      See details
-                                    </span>
-                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleShowDescription(scenario);
+                                    }}
+                                    className="inline-flex items-center gap-1 mt-1 text-xs text-gray-500 hover:text-gray-900 transition-colors font-medium"
+                                  >
+                                    <Info className="w-3.5 h-3.5 text-gray-400" />
+                                    <span>See details</span>
+                                  </button>
                                 )}
                               </div>
                             </div>
-                          </button>
+                          </div>
                         );
                       })
                     ) : (
@@ -701,11 +712,11 @@ export default function ExplorePage() {
                       className="w-full text-left softui-card p-4 flex items-center justify-between border-1.5 border-dashed border-gray-300 bg-transparent transition-all duration-150 hover:translate-y-[-2px] active:translate-y-[1px]"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-100">
-                          <Plus className="w-5 h-5 text-gray-400" />
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-yellow-50 border border-dashed border-[#F5B301]">
+                          <Plus className="w-5 h-5 text-yellow-600" />
                         </div>
                         <div>
-                          <span className="text-gray-600 font-medium">Ask a custom scenario</span>
+                          <span className="text-gray-600 font-semibold text-sm">Ask a custom scenario</span>
                           <p className="text-xs text-gray-400 mt-0.5">Type your own what-if</p>
                         </div>
                       </div>
