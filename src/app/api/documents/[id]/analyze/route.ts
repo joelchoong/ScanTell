@@ -220,25 +220,50 @@ export async function POST(
     if (parsedData.isInsuranceDocument && scenarios.length > 0) {
       const contextText = parsedData.extractedText || JSON.stringify(parsedData.analysis, null, 2);
       const batchPrompt = `
-You are an insurance expert.
+You are an insurance policy analyst. Respond ONLY with valid JSON — no markdown, no prose.
 
-Return ONLY JSON in this format:
+Return EXACTLY this structure:
 
 {
-  "answers": {
-    "question": "answer"
-  }
+"coverageLimits": {
+"summary": "",
+"annualLimit": "",
+"lifetimeLimit": "",
+"importantNotes": []
+},
+"claimsRequirements": {
+"summary": "",
+"waitingPeriods": [],
+"preApprovalRequirements": [],
+"claimRejectionReasons": []
+},
+"surgeryExclusions": {
+"summary": "",
+"excludedProcedures": [],
+"importantNotes": []
+},
+"premiumChanges": {
+"summary": "",
+"premiumIncreaseRules": [],
+"coverageChangeRules": [],
+"claimImpact": []
+}
 }
 
-Rules:
-- Keys must match questions EXACTLY
-- Max 200 words per answer
-- If unknown: "Not specified in policy"
+Formatting rules — follow these exactly:
+
+1. Use terse "Label: Value" format. Example: "Annual Limit: RM7,300,000."
+2. Strip filler words — never start with "The", "This", "It is", "Benefit payable is", "Which pertains to", "Specifically for". Lead with the fact.
+3. Lists: each item is a short factual fragment (≤15 words). No full sentences.
+4. Include page/section references (e.g. "Section 4.2", "Page 12") ONLY when the source text contains them. Do not fabricate references.
+5. Prefer exact values: amounts, percentages, durations, ages, waiting periods, caps.
+6. If information is not found, use "Not specified in policy".
+7. Never invent or infer information not present in the policy text.
 
 Policy Text:
 ${contextText}
 
-Questions to answer (please use the EXACT question as the key in the "answers" object):
+Questions to answer (use the EXACT question as the key in the "answers" object):
 ${scenarios.map((s, i) => `${i + 1}. ${s.query}`).join("\n")}
 `;
 

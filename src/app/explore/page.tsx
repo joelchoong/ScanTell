@@ -721,12 +721,12 @@ export default function ExplorePage() {
                             const Icon = getIcon(selectedScenario.icon);
                             const colors = getIconColors(selectedScenario.icon);
                             return (
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center self-center" style={{ backgroundColor: colors.bg }}>
                                 <Icon className="w-4 h-4" style={{ color: colors.icon }} />
                               </div>
                             );
                           })()}
-                          <span className="text-sm font-semibold text-gray-900">{selectedScenario.title}</span>
+                          <span className="text-sm font-semibold text-gray-900 self-center">{selectedScenario.title}</span>
                         </div>
                         <button
                           onClick={() => setSelectedScenario(null)}

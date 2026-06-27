@@ -49,8 +49,17 @@ export async function POST(
       }
 
       const contextText = doc.extractedText || JSON.stringify(doc.analysis, null, 2);
-      const prompt = `You are an insurance expert. Answer the following question based on the policy context below.
-Limit your response to at most 200 words. Be clear, concise, and accurate. If the information is not specified in the policy, answer "Not specified in policy".
+      const prompt = `You are an insurance policy analyst. Answer the question below using ONLY facts from the policy context.
+
+Formatting rules — follow these exactly:
+1. Use terse "Label: Value" format. Example: "Annual Limit: RM7,300,000."
+2. Strip filler words — never start with "The", "This", "It is", "Benefit payable is", "Which pertains to", "Specifically for". Lead with the fact.
+3. Each point should be a short factual fragment (≤15 words). No full sentences or paragraphs.
+4. Include page/section references (e.g. "Section 4.2", "Page 12") ONLY when the source text contains them. Do not fabricate references.
+5. Prefer exact values: amounts, percentages, durations, ages, waiting periods, caps.
+6. If information is not found, state "Not specified in policy".
+7. Never invent or infer information not present in the policy text.
+8. Limit response to at most 150 words.
 
 Policy Context:
 ${contextText}
