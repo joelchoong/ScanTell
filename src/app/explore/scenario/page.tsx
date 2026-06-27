@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { colors, typography } from "@/lib/design-system";
+import AnswerRenderer from "@/features/explore/components/AnswerRenderer";
 import {
   ChevronLeft,
   Loader2,
@@ -252,16 +253,19 @@ function ScenarioContent() {
               </div>
 
               {/* Answer Card */}
-              <div className="softui-card p-6 relative overflow-hidden bg-white/70 backdrop-blur-sm border border-white/30">
+              <div className="softui-card p-5 relative overflow-hidden bg-white/70 backdrop-blur-sm border border-white/30">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2.5 mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-yellow-600">
                       AI Analysis Answer
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                    {scenarioAnswer}
-                  </p>
+                  {scenarioAnswer && (
+                    <AnswerRenderer
+                      answer={scenarioAnswer}
+                      accentColor={iconColors.icon}
+                    />
+                  )}
                 </div>
               </div>
             </div>
