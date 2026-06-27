@@ -53,13 +53,15 @@ export async function POST(
 
 Formatting rules — follow these exactly:
 1. Use terse "Label: Value" format. Example: "Annual Limit: RM7,300,000."
-2. Strip filler words — never start with "The", "This", "It is", "Benefit payable is", "Which pertains to", "Specifically for". Lead with the fact.
-3. Each point should be a short factual fragment (≤15 words). No full sentences or paragraphs.
-4. Include page/section references (e.g. "Section 4.2", "Page 12") ONLY when the source text contains them. Do not fabricate references.
-5. Prefer exact values: amounts, percentages, durations, ages, waiting periods, caps.
-6. If information is not found, state "Not specified in policy".
-7. Never invent or infer information not present in the policy text.
-8. Limit response to at most 150 words.
+2. CONSOLIDATE related items. Group exclusions/items by category on ONE line using commas. Example: "Death Exclusions: suicide (1st year). (Page 13)" NOT separate lines for each exclusion.
+3. Maximum 10 output lines total. Merge aggressively — combine similar items.
+4. Strip filler words — never start with "The", "This", "It is", "Benefit payable is". Lead with the fact.
+5. Each line ≤20 words. No full sentences or paragraphs.
+6. Include page/section references (e.g. "Section 4.2", "Page 12") ONLY when the source text contains them. One reference per grouped line is enough.
+7. Prefer exact values: amounts, percentages, durations, ages, waiting periods, caps.
+8. If information is not found, state "Not specified in policy".
+9. Never invent or infer information not present in the policy text.
+10. Limit response to at most 120 words.
 
 Policy Context:
 ${contextText}

@@ -253,12 +253,13 @@ Return EXACTLY this structure:
 Formatting rules — follow these exactly:
 
 1. Use terse "Label: Value" format. Example: "Annual Limit: RM7,300,000."
-2. Strip filler words — never start with "The", "This", "It is", "Benefit payable is", "Which pertains to", "Specifically for". Lead with the fact.
-3. Lists: each item is a short factual fragment (≤15 words). No full sentences.
-4. Include page/section references (e.g. "Section 4.2", "Page 12") ONLY when the source text contains them. Do not fabricate references.
-5. Prefer exact values: amounts, percentages, durations, ages, waiting periods, caps.
-6. If information is not found, use "Not specified in policy".
-7. Never invent or infer information not present in the policy text.
+2. CONSOLIDATE related items. Group by category on ONE line using commas. Example: "SmartMedic: cosmetic surgery, Lasik, pregnancy, hazardous sports. (Page 14)" — NOT one line per exclusion.
+3. Maximum 5 items per list. Merge aggressively — combine similar items into one entry.
+4. Summaries: ≤15 words. No filler words — never start with "The", "This", "It is".
+5. Include page/section references once per grouped line. Do not fabricate references.
+6. Prefer exact values: amounts, percentages, durations, ages, caps.
+7. If information is not found, use "Not specified in policy".
+8. Never invent or infer information not present in the policy text.
 
 Policy Text:
 ${contextText}
