@@ -62,6 +62,9 @@ Formatting rules — follow these exactly:
 8. If information is not found, state "Not specified in policy".
 9. Never invent or infer information not present in the policy text.
 10. Limit response to at most 120 words.
+11. CRITICAL: For waiting periods, ALWAYS use "Condition: Duration" format. Examples: "Hospitalisation: 30 days", "Surgery: 14 days", "Critical Illness: 90 days". Never provide just "30 days" without the condition label.
+12. CRITICAL: For premium/charge tables with age brackets, use semicolon-separated format: "Up to 80: RM250; 81-85: RM1,340; 86-90: RM2,290". This enables table rendering.
+13. CRITICAL: Group all exclusions together under single labels like "Exclusions" or "Excluded Treatments". Combine multiple exclusion categories into one consolidated list.
 
 Policy Context:
 ${contextText}
