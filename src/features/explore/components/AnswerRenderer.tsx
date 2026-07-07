@@ -65,15 +65,11 @@ function parseLine(raw: string): ParsedLine | null {
   const trimmed = raw.trim();
   if (!trimmed || trimmed.length < 1) return null;
 
+  // Skip standalone page reference lines
+  if (/^(?:Page|Section|Pg|p\.|Sec\.?)\s*[\d.,\s]+$/i.test(trimmed)) return null;
+
   let pageRef: string | null = null;
   let cleaned = trimmed;
-
-  // Check if this is a standalone page reference line (e.g., "Page 13")
-  const standalonePageMatch = cleaned.match(/^(?:Page|Section|Pg|p\.|Sec\.?)\s*[\d.,\s]+$/i);
-  if (standalonePageMatch) {
-    // This is a standalone page reference, skip it
-    return null;
-  }
 
   const pageMatch = cleaned.match(
     /\s*\((?:Page|Section|Pg|p\.|Sec\.?)\s*[\d.,\s]+(?:(?:Page|Section|Pg|p\.|Sec\.?)\s*[\d.,\s]*)*\)\.?\s*$/i
@@ -92,23 +88,13 @@ function parseLine(raw: string): ParsedLine | null {
 
   const colonIndex = cleaned.indexOf(":");
   if (colonIndex === -1) {
-    return {
-      label: "",
-      value: cleaned,
-      pageRef,
-      type: classifyLine("", cleaned),
-    };
+    return { label: "", value: cleaned, pageRef, type: classifyLine("", cleaned) };
   }
 
   const label = cleaned.slice(0, colonIndex).trim();
   const value = cleaned.slice(colonIndex + 1).trim();
 
-  return {
-    label,
-    value,
-    pageRef,
-    type: classifyLine(label, value),
-  };
+  return { label, value, pageRef, type: classifyLine(label, value) };
 }
 
 function detectStructuredData(value: string): boolean {
@@ -423,7 +409,7 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
                 )}
               </div>
               {(() => {
-                // Check if this group has structured data
+                // Check if this group has structured data (age bracket tables)
                 if (group.isStructuredData && group.items.length > 0) {
                   const structuredData = parseStructuredData(group.items[0].value);
                   if (structuredData) {
@@ -433,12 +419,8 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
                           <tbody>
                             {structuredData.map((row, idx) => (
                               <tr key={idx} className="border-b border-[#e8e3d9] last:border-0">
-                                <td className="py-1.5 pr-4 text-[#6b6050] font-medium whitespace-nowrap">
-                                  {row.label}
-                                </td>
-                                <td className="py-1.5 text-[#121417] font-semibold">
-                                  {row.value}
-                                </td>
+                                <td className="py-1.5 pr-4 text-[#6b6050] font-medium whitespace-nowrap">{row.label}</td>
+                                <td className="py-1.5 text-[#121417] font-semibold">{row.value}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -447,23 +429,28 @@ export default function AnswerRenderer({ answer, accentColor }: AnswerRendererPr
                     );
                   }
                 }
-                
-                if (isSingle) {
+
+                // Flatten all items and split by semicolon for sub-bullets
+                const allValues = group.items.flatMap(item => {
+                  // Split semicolon-separated sub-items into individual bullets
+                  const parts = item.value.split(/\s*;\s*/).filter(Boolean);
+                  return parts.length > 1 ? parts : [item.value];
+                });
+
+                if (allValues.length === 1) {
                   return (
                     <p className="text-[13px] font-semibold text-[#121417] leading-snug">
-                      {group.items[0].value || "—"}
+                      {allValues[0] || "—"}
                     </p>
                   );
                 }
+
                 return (
                   <div className="space-y-0.5">
-                    {group.items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start text-[13px] leading-relaxed text-[#121417] font-semibold"
-                      >
+                    {allValues.map((val, idx) => (
+                      <div key={idx} className="flex items-start text-[13px] leading-relaxed text-[#121417] font-semibold">
                         <span className="text-gray-400 mr-1.5 select-none">•</span>
-                        <span>{item.value}</span>
+                        <span>{val}</span>
                       </div>
                     ))}
                   </div>
