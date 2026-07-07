@@ -54,20 +54,29 @@ export async function POST(
 Core guidelines:
 - Use ONLY information explicitly stated in the provided policy text. Do not use external insurance knowledge, assumptions, interpretations, or typical industry practices.
 - Extract facts only. Preserve conditions, exceptions, qualifiers, limitations, and eligibility requirements.
+- Prioritize information in this order:
+  1. Coverage amounts and annual/lifetime limits
+  2. Coverage age / maximum coverage age
+  3. Eligibility and durations
+  4. Waiting periods
+  5. Exclusions
+  6. Charges/premiums
+  7. Claim requirements
 - Never create page/section references. Include references only when explicitly present in the policy text.
 - If information is unavailable, output: "Not specified in policy."
 
 Formatting rules — follow these exactly:
-1. EVERY line MUST use "Label: Value" format. Example: "Annual Limit: RM7,300,000" or "Waiting Period: 30 days".
-2. Each DISTINCT concept MUST be its own separate line. Do NOT combine fundamentally different topics (e.g. annual limits, lifetime limits, and age limits are 3 separate lines).
-3. Within a single concept, consolidate related sub-items using semicolons. Example: "Annual Limit: SmartMedic Shield RM1,650,000; Extender RM2,000,000; Double Limit RM3,650,000".
+1. EVERY line MUST use "Label: Value" format. Example: "Annual Limit: RM1,650,000" or "Coverage Age: Up to age 100".
+2. Each DISTINCT concept MUST be its own separate line. Do NOT combine fundamentally different topics on one line. Examples of distinct concepts: annual limit, lifetime limit, coverage age, waiting periods, exclusions.
+3. Within a single concept, consolidate related sub-items using semicolons. Example: "Annual Limit: SmartMedic Shield RM1,650,000; Extender additional RM2,000,000; Double Limit additional RM3,650,000".
 4. Group all exclusions into ONE line: "Exclusions: cosmetic surgery, congenital conditions".
 5. For premium/charge tables, use semicolon-separated age brackets: "Premium by Age: Up to 80 RM250; 81-85 RM1,340".
 6. For waiting periods, use condition:duration format: "Waiting Periods: Hospitalisation 30 days; Critical Illness 90 days".
-7. Maximum 12 output lines. Each line ≤25 words.
+7. Maximum 15 output lines. Each line ≤30 words.
 8. No markdown, no bullet points, no blank lines, no standalone headers.
 9. Include page references only when present in source text, appended in parentheses: "Label: Value. (Page 12)".
 10. Never invent or infer information not in the policy text.
+11. ALWAYS include coverage age / maximum age if mentioned in the policy — this is critical information.
 
 Policy Context:
 ${contextText}
