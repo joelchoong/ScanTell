@@ -133,7 +133,10 @@ function ScenarioContent() {
             scenarioId: scenarioMatch.id,
           }),
         });
-        if (!answerRes.ok) throw new Error("Failed to fetch scenario answer.");
+        if (!answerRes.ok) {
+          const errData = await answerRes.json().catch(() => ({}));
+          throw new Error(errData.error || `Failed to fetch scenario answer (${answerRes.status}).`);
+        }
         const answerData = await answerRes.json();
         setScenarioAnswer(answerData.answer);
       } catch (err: any) {
