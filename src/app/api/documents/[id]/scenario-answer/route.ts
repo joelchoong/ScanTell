@@ -68,7 +68,10 @@ Core guidelines:
 Formatting rules — follow these exactly:
 1. EVERY line MUST use "Label: Value" format. Example: "Annual Limit: RM1,650,000" or "Coverage Age: Up to age 100".
 2. Each DISTINCT concept MUST be its own separate line. Do NOT combine fundamentally different topics on one line. Examples of distinct concepts: annual limit, lifetime limit, coverage age, waiting periods, exclusions.
-3. Within a single concept, consolidate related sub-items using semicolons. Example: "Annual Limit: SmartMedic Shield RM1,650,000; Extender additional RM2,000,000; Double Limit additional RM3,650,000".
+3. Within a single concept, consolidate related sub-items using semicolons. Example: "Annual Limit: SmartMedic Shield RM1,650,000; Extender additional RM2,000,000; Double Limit additional RM3,650,000; Overall RM7,300,000".
+   - All annual limit breakdowns (base + extensions + overall total) = ONE line labelled "Annual Limit"
+   - All lifetime limit info = ONE line labelled "Lifetime Limit"
+   - All coverage age info = ONE line labelled "Coverage Age"
 4. Group all exclusions into ONE line: "Exclusions: cosmetic surgery, congenital conditions".
 5. For premium/charge tables, use semicolon-separated age brackets: "Premium by Age: Up to 80 RM250; 81-85 RM1,340".
 6. For waiting periods, use condition:duration format: "Waiting Periods: Hospitalisation 30 days; Critical Illness 90 days".
