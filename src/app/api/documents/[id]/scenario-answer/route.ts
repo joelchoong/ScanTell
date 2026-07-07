@@ -107,7 +107,21 @@ ${query}`;
       if (!geminiRes.ok) {
         const errText = await geminiRes.text();
         console.error("[scenario-answer] Gemini API Error:", errText);
-        throw new Error("Failed to generate response from Gemini API");
+        // Parse the error for a user-friendly message
+        let geminiErrorMsg = "Failed to generate response from Gemini API";
+        try {
+          const errJson = JSON.parse(errText);
+          const status = errJson?.error?.status;
+          const message = errJson?.error?.message;
+          if (status === "RESOURCE_EXHAUSTED") {
+            geminiErrorMsg = "AI quota exceeded. Please try again later or check your Gemini API billing.";
+          } else if (status === "INVALID_ARGUMENT") {
+            geminiErrorMsg = "Invalid request to AI. Please try again.";
+          } else if (message) {
+            geminiErrorMsg = message;
+          }
+        } catch {}
+        throw new Error(geminiErrorMsg);
       }
 
       const geminiData = await geminiRes.json();
