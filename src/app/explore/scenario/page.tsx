@@ -89,29 +89,9 @@ function ScenarioContent() {
     return iconMap[iconName] || FileText;
   };
 
-  // Color mapping for scenarios — dark gold or graphite based on category
+  // Color mapping for scenarios — dark gold
   const getIconColors = (iconName: string) => {
-    const isGold = [
-      "Stethoscope",
-      "Heart",
-      "Brain",
-      "Activity",
-      "Pill",
-      "Smile",
-      "User",
-      "Scissors",
-      "Leaf",
-      "Globe",
-      "Plane",
-      "TrendingUp",
-      "Clock",
-      "AlertCircle"
-    ].includes(iconName);
-
-    if (isGold) {
-      return { bg: "rgba(245, 179, 1, 0.15)", icon: "#d49800" };
-    }
-    return { bg: "rgba(90, 90, 106, 0.12)", icon: "#5a5a6a" };
+    return { bg: "rgba(245, 179, 1, 0.15)", icon: "#d49800" };
   };
 
   useEffect(() => {
@@ -172,7 +152,7 @@ function ScenarioContent() {
   };
 
   const IconComponent = scenario ? getIcon(scenario.icon) : FileText;
-  const iconColors = scenario ? getIconColors(scenario.icon) : { bg: "#f3f4f6", icon: "#4b5563" };
+  const iconColors = scenario ? getIconColors(scenario.icon) : { bg: "rgba(245, 179, 1, 0.15)", icon: "#d49800" };
 
   return (
     <div

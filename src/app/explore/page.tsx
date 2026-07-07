@@ -52,6 +52,8 @@ export default function ExplorePage() {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [selectedDescription, setSelectedDescription] = useState<{ title: string; description: string } | null>(null);
 
+  const hasDocId = !!searchParams.get('id') || (!!searchParams.get('file') && !!searchParams.get('url'));
+  const [initialLoading, setInitialLoading] = useState(hasDocId);
   const [showMenuDropdown, setShowMenuDropdown] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -80,32 +82,13 @@ export default function ExplorePage() {
       TrendingUp,
       AlertCircle,
     };
+
     return iconMap[iconName] || FileText;
   };
 
-  // Color mapping for scenarios — dark gold or graphite based on category
+  // Color mapping for scenarios — dark gold
   const getIconColors = (iconName: string) => {
-    const isGold = [
-      "Stethoscope",
-      "Heart",
-      "Brain",
-      "Activity",
-      "Pill",
-      "Smile",
-      "User",
-      "Scissors",
-      "Leaf",
-      "Globe",
-      "Plane",
-      "TrendingUp",
-      "Clock",
-      "AlertCircle"
-    ].includes(iconName);
-
-    if (isGold) {
-      return { bg: "rgba(245, 179, 1, 0.15)", icon: "#d49800" };
-    }
-    return { bg: "rgba(90, 90, 106, 0.12)", icon: "#5a5a6a" };
+    return { bg: "rgba(245, 179, 1, 0.15)", icon: "#d49800" };
   };
 
   // Load documents from actual endpoint
@@ -124,9 +107,14 @@ export default function ExplorePage() {
   };
 
   useEffect(() => {
+    const docId = searchParams.get('id');
+    const fileParam = searchParams.get('file');
+    const urlParam = searchParams.get('url');
+    const hasQuery = !!docId || (!!fileParam && !!urlParam);
+
+    setInitialLoading(hasQuery);
+
     loadDocuments().then((docs) => {
-      // Check if id is passed as query parameter
-      const docId = searchParams.get('id');
       if (docId && docs.length > 0) {
         const found = docs.find((d: any) => d.id === docId);
         if (found) {
@@ -134,8 +122,6 @@ export default function ExplorePage() {
         }
       } else {
         // Fallback to file/url parameters if present
-        const fileParam = searchParams.get('file');
-        const urlParam = searchParams.get('url');
         if (fileParam && urlParam) {
           const found = docs.find((d: any) => d.fileUrl === decodeURIComponent(urlParam));
           if (found) {
@@ -143,6 +129,7 @@ export default function ExplorePage() {
           }
         }
       }
+      setInitialLoading(false);
     });
   }, [searchParams]);
 
@@ -525,7 +512,7 @@ export default function ExplorePage() {
           <div className="space-y-6 pt-4">
             <div className="space-y-0">
               {/* Upload Section - Hidden when file is selected */}
-              {!selectedDoc && (
+              {!selectedDoc && !initialLoading && (
                 <section
                   className="rounded-[2rem] p-7 relative shadow-sm"
                   style={{ backgroundColor: colors.background.base }}
@@ -611,6 +598,17 @@ export default function ExplorePage() {
                     className="absolute -right-8 -bottom-8 w-36 h-36 rounded-full"
                     style={{ backgroundColor: colors.primary.rgba[15] }}
                   />
+                </section>
+              )}
+
+              {/* Initial Loading State when redirecting back to a document */}
+              {!selectedDoc && initialLoading && (
+                <section className="softui-card p-8 flex flex-col items-center justify-center gap-4 mt-6 min-h-[300px]">
+                  <Loader2 className="w-12 h-12 animate-spin text-yellow-600" />
+                  <div className="text-center">
+                    <p className="text-gray-900 font-medium">Loading document...</p>
+                    <p className="text-gray-500 text-sm mt-1">Retrieving analysis and cached scenarios</p>
+                  </div>
                 </section>
               )}
 

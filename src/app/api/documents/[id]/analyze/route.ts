@@ -112,6 +112,7 @@ export async function POST(
           ],
           generationConfig: {
             responseMimeType: "application/json",
+            maxOutputTokens: 65536,
             responseSchema: {
               type: "OBJECT",
               properties: {
@@ -247,22 +248,38 @@ Return EXACTLY this structure:
 "premiumIncreaseRules": [],
 "coverageChangeRules": [],
 "claimImpact": []
+},
+"answers": {
+"question text here": "answer text here"
 }
 }
+
+Core guidelines:
+- Use ONLY information explicitly stated in the provided policy text. Do not use external insurance knowledge, assumptions, interpretations, or typical industry practices.
+- Extract facts only. Preserve conditions, exceptions, qualifiers, limitations, and eligibility requirements.
+- Prioritize information in this order:
+  1. Benefits and coverage amounts
+  2. Eligibility and durations
+  3. Waiting periods
+  4. Exclusions
+  5. Charges/premiums
+  6. Claim requirements
+- Never create page/section references. Include references only when explicitly present in the policy text.
+- If information is unavailable, output: "Not specified in policy."
 
 Formatting rules — follow these exactly:
-
-1. Use terse "Label: Value" format. Example: "Annual Limit: RM7,300,000."
-2. CONSOLIDATE related items. Group by category on ONE line using commas. Example: "SmartMedic: cosmetic surgery, Lasik, pregnancy, hazardous sports. (Page 14)" — NOT one line per exclusion.
+1. EVERY line in the output MUST start with a terse "Label: Value" format. Example: "Annual Limit: RM7,300,000." or "Claim Impact: Not specified in policy." NEVER output standalone headers, page numbers, list symbols, or blank lines on separate lines by themselves.
+2. CONSOLIDATE related items. Group exclusions, benefits, or items by category on ONE line using commas. Example: "Excluded Treatments: cosmetic surgery, congenital conditions. (Page 14)" or "Benefits: dialysis RM5,000, daily cash RM150. (Page 11)" — NOT separate lines or different sections for each category or page.
 3. Maximum 5 items per list. Merge aggressively — combine similar items into one entry.
 4. Summaries: ≤15 words. No filler words — never start with "The", "This", "It is".
-5. Include page/section references once per grouped line. Do not fabricate references.
+5. Include page/section references once per grouped line. Append them to the end of the line inside parentheses. Example: "Label: Value. (Page 12)". Do not fabricate references.
 6. Prefer exact values: amounts, percentages, durations, ages, caps.
-7. If information is not found, use "Not specified in policy".
+7. If information is not found, state "Not specified in policy" directly after the label. Example: "Label: Not specified in policy."
 8. Never invent or infer information not present in the policy text.
 9. CRITICAL: For waiting periods, ALWAYS use "Condition: Duration" format. Examples: "Hospitalisation: 30 days", "Surgery: 14 days", "Critical Illness: 90 days". Never provide just "30 days" without the condition label.
 10. CRITICAL: For premium/charge tables with age brackets, use semicolon-separated format: "Up to 80: RM250; 81-85: RM1,340; 86-90: RM2,290". This enables table rendering.
-11. CRITICAL: Group all exclusions together under single labels like "Exclusions" or "Excluded Treatments". Combine multiple exclusion categories into one consolidated list.
+11. CRITICAL: Group all exclusions (including excluded surgeries, procedures, conditions, and treatments) together into ONE single consolidated line. Use a single label like "Excluded Treatments" or "Exclusions". Do NOT split exclusions into different lines, lists, or categories.
+12. CRITICAL: Group all benefits, coverage limits, sub-limits, and daily cash amounts together into ONE single consolidated line. Use a single label like "Coverage Limits" or "Benefits" for the entire list. Do NOT split different benefit types onto different lines.
 
 Policy Text:
 ${contextText}
@@ -284,6 +301,7 @@ ${scenarios.map((s, i) => `${i + 1}. ${s.query}`).join("\n")}
             ],
             generationConfig: {
               responseMimeType: "application/json",
+              maxOutputTokens: 65536,
             },
           }),
         }
@@ -291,23 +309,28 @@ ${scenarios.map((s, i) => `${i + 1}. ${s.query}`).join("\n")}
 
       if (batchRes.ok) {
         const data = await batchRes.json();
+        const finishReason = data.candidates?.[0]?.finishReason;
         const text =
           data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (text) {
-          const parsed = JSON.parse(text);
-          const rawAnswers = parsed.answers || {};
+          try {
+            const parsed = JSON.parse(text);
+            const rawAnswers = parsed.answers || {};
 
-          // Map both query text and scenario ID for maximum compatibility
-          for (const scenario of scenarios) {
-            const matchedKey = Object.keys(rawAnswers).find(
-              key => key.toLowerCase().trim() === scenario.query.toLowerCase().trim()
-            );
-            const answer = matchedKey ? rawAnswers[matchedKey] : null;
-            if (answer) {
-              scenarioAnswers[scenario.query] = answer;
-              scenarioAnswers[scenario.id] = answer;
+            // Map both query text and scenario ID for maximum compatibility
+            for (const scenario of scenarios) {
+              const matchedKey = Object.keys(rawAnswers).find(
+                key => key.toLowerCase().trim() === scenario.query.toLowerCase().trim()
+              );
+              const answer = matchedKey ? rawAnswers[matchedKey] : null;
+              if (answer) {
+                scenarioAnswers[scenario.query] = answer;
+                scenarioAnswers[scenario.id] = answer;
+              }
             }
+          } catch (parseErr) {
+            console.warn(`[documents/analyze] Batch JSON parse failed (finishReason: ${finishReason}). Scenario answers will be generated on-demand.`, parseErr);
           }
         }
       }
