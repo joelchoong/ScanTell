@@ -54,6 +54,11 @@ export async function POST(
 Core guidelines:
 - Use ONLY information explicitly stated in the provided policy text. Do not use external insurance knowledge, assumptions, interpretations, or typical industry practices.
 - Extract facts only. Preserve conditions, exceptions, qualifiers, limitations, and eligibility requirements.
+- TRANSLATE policy jargon into plain English. Never quote internal item numbers, schedule references, or clause codes that a layperson wouldn't understand. For example:
+  - "No limit for items 2 to 27" → "No lifetime limit on your coverage"
+  - "SmartMedic Shield items 2-27" → "your core medical coverage"
+  - "IL Premium Waiver Extra Rider" → "premium waiver rider"
+  - "Next birthday" age references → just state the age plainly, e.g. "up to age 100"
 - Prioritize information in this order:
   1. Coverage amounts and annual/lifetime limits
   2. Coverage age / maximum coverage age
