@@ -220,71 +220,42 @@ export async function POST(
 
     if (parsedData.isInsuranceDocument && scenarios.length > 0) {
       const contextText = parsedData.extractedText || JSON.stringify(parsedData.analysis, null, 2);
-      const batchPrompt = `
-You are an insurance policy analyst. Respond ONLY with valid JSON — no markdown, no prose.
+      const batchPrompt = `You are an insurance policy analyst. Respond ONLY with valid JSON — no markdown, no prose, no code fences.
 
 Return EXACTLY this structure:
-
 {
-"coverageLimits": {
-"summary": "",
-"annualLimit": "",
-"lifetimeLimit": "",
-"importantNotes": []
-},
-"claimsRequirements": {
-"summary": "",
-"waitingPeriods": [],
-"preApprovalRequirements": [],
-"claimRejectionReasons": []
-},
-"surgeryExclusions": {
-"summary": "",
-"excludedProcedures": [],
-"importantNotes": []
-},
-"premiumChanges": {
-"summary": "",
-"premiumIncreaseRules": [],
-"coverageChangeRules": [],
-"claimImpact": []
-},
-"answers": {
-"question text here": "answer text here"
-}
+  "answers": {
+    "exact question text": "answer text"
+  }
 }
 
 Core guidelines:
-- Use ONLY information explicitly stated in the provided policy text. Do not use external insurance knowledge, assumptions, interpretations, or typical industry practices.
-- Extract facts only. Preserve conditions, exceptions, qualifiers, limitations, and eligibility requirements.
-- Prioritize information in this order:
-  1. Benefits and coverage amounts
-  2. Eligibility and durations
-  3. Waiting periods
-  4. Exclusions
-  5. Charges/premiums
-  6. Claim requirements
+- Use ONLY information explicitly stated in the provided policy text. Do not use external insurance knowledge, assumptions, or typical industry practices.
+- TRANSLATE policy jargon into plain English. Never quote internal item numbers, schedule references, or clause codes a layperson wouldn't understand. Examples:
+  - "No limit for items 2 to 27" → "No lifetime limit on your coverage"
+  - "SmartMedic Shield items 2-27" → "your core medical coverage"
+  - "Next birthday" age references → just state the age plainly, e.g. "up to age 100"
+- Preserve conditions, exceptions, qualifiers, limitations, and eligibility requirements.
+- Prioritize: coverage amounts → coverage age → waiting periods → exclusions → premiums → claim requirements.
 - Never create page/section references. Include references only when explicitly present in the policy text.
 - If information is unavailable, output: "Not specified in policy."
 
-Formatting rules — follow these exactly:
-1. EVERY line in the output MUST start with a terse "Label: Value" format. Example: "Annual Limit: RM7,300,000." or "Claim Impact: Not specified in policy." NEVER output standalone headers, page numbers, list symbols, or blank lines on separate lines by themselves.
-2. CONSOLIDATE related items. Group exclusions, benefits, or items by category on ONE line using commas. Example: "Excluded Treatments: cosmetic surgery, congenital conditions. (Page 14)" or "Benefits: dialysis RM5,000, daily cash RM150. (Page 11)" — NOT separate lines or different sections for each category or page.
-3. Maximum 5 items per list. Merge aggressively — combine similar items into one entry.
-4. Summaries: ≤15 words. No filler words — never start with "The", "This", "It is".
-5. Include page/section references once per grouped line. Append them to the end of the line inside parentheses. Example: "Label: Value. (Page 12)". Do not fabricate references.
-6. Prefer exact values: amounts, percentages, durations, ages, caps.
-7. If information is not found, state "Not specified in policy" directly after the label. Example: "Label: Not specified in policy."
-8. Never invent or infer information not present in the policy text.
-9. CRITICAL: For waiting periods, ALWAYS use "Condition: Duration" format. Examples: "Hospitalisation: 30 days", "Surgery: 14 days", "Critical Illness: 90 days". Never provide just "30 days" without the condition label.
-10. CRITICAL: For premium/charge tables with age brackets, use semicolon-separated format: "Up to 80: RM250; 81-85: RM1,340; 86-90: RM2,290". This enables table rendering.
-11. CRITICAL: Group all exclusions (including excluded surgeries, procedures, conditions, and treatments) together into ONE single consolidated line. Use a single label like "Excluded Treatments" or "Exclusions". Do NOT split exclusions into different lines, lists, or categories.
-12. CRITICAL: Group all benefits, coverage limits, sub-limits, and daily cash amounts together into ONE single consolidated line. Use a single label like "Coverage Limits" or "Benefits" for the entire list. Do NOT split different benefit types onto different lines.
+Formatting rules:
+1. EVERY line MUST use "Label: Value" format. Example: "Annual Limit: RM1,650,000" or "Coverage Age: Up to age 100".
+2. Each DISTINCT concept MUST be its own separate line. Annual limits, lifetime limits, and coverage age are 3 separate lines.
+3. Within a single concept, consolidate related sub-items using semicolons. Example: "Annual Limit: Core coverage RM1,650,000; Extender additional RM2,000,000; Double Limit additional RM3,650,000; Overall RM7,300,000".
+4. All annual limit breakdowns (base + extensions + overall total) = ONE line labelled "Annual Limit".
+5. Group all exclusions into ONE line: "Exclusions: cosmetic surgery, congenital conditions".
+6. For premium/charge tables, use semicolon-separated age brackets: "Premium by Age: Up to 80 RM250; 81-85 RM1,340".
+7. For waiting periods: "Waiting Periods: Hospitalisation 30 days; Critical Illness 90 days".
+8. Maximum 15 lines per answer. Each line ≤30 words.
+9. No markdown, no bullet points, no blank lines, no standalone headers.
+10. ALWAYS include coverage age / maximum age if mentioned in the policy.
 
 Policy Text:
 ${contextText}
 
-Questions to answer (use the EXACT question as the key in the "answers" object):
+Questions to answer (use the EXACT question text as the key in the "answers" object):
 ${scenarios.map((s, i) => `${i + 1}. ${s.query}`).join("\n")}
 `;
 
