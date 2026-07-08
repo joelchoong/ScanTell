@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
         userId,
         question,
         answer: answer || null,
-        source: source || null,         // "chat" | "scenario" | "custom"
         aiModel: "gemini-2.5-flash",
         documentId: documentId || null,
       },

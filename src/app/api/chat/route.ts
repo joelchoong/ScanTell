@@ -105,7 +105,6 @@ If information is not in the policy text, say you couldn't find it in this docum
           userId,
           question: lastUserMessage.content,
           answer: reply,
-          source: "chat",
           aiModel: "gemini-2.5-flash",
           documentId: documentId || null,
         },

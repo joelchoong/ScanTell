@@ -156,7 +156,6 @@ ${query}`;
           userId,
           question: query,
           answer,
-          source: "scenario",
           aiModel: "gemini-2.5-flash",
           documentId: id,
         },

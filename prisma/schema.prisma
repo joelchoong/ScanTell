@@ -89,7 +89,6 @@ model UserQuestion {
   userId     String
   question   String
   answer     String?  // The AI-generated answer
-  source     String?  // "chat" | "scenario" | "custom"
   aiModel    String?  // e.g. "gemini-2.5-flash" — useful when you swap models
   documentId String?
   createdAt  DateTime @default(now())
