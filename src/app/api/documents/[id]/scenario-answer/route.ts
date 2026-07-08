@@ -147,12 +147,20 @@ ${query}`;
 
       await prisma.document.update({
         where: { id },
-        data: {
-          scenarioAnswers: updatedAnswers as any,
-        },
+        data: { scenarioAnswers: updatedAnswers as any },
       });
-      
-      console.log(`[scenario-answer] Successfully saved dynamic answer for document ${id}.`);
+
+      // Log Q&A for training analysis — fire and forget
+      prisma.userQuestion.create({
+        data: {
+          userId,
+          question: query,
+          answer,
+          source: "scenario",
+          aiModel: "gemini-2.5-flash",
+          documentId: id,
+        },
+      }).catch((err) => console.error("[scenario-answer] Failed to log Q&A:", err));
     }
 
     return NextResponse.json({ answer });

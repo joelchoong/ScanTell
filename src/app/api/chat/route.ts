@@ -97,6 +97,21 @@ If information is not in the policy text, say you couldn't find it in this docum
       return NextResponse.json({ error: "No response received from Gemini." }, { status: 500 });
     }
 
+    // Log the Q&A pair for training analysis — fire and forget
+    const lastUserMessage = [...messages].reverse().find((m: any) => m.role === "user");
+    if (lastUserMessage) {
+      prisma.userQuestion.create({
+        data: {
+          userId,
+          question: lastUserMessage.content,
+          answer: reply,
+          source: "chat",
+          aiModel: "gemini-2.5-flash",
+          documentId: documentId || null,
+        },
+      }).catch((err) => console.error("[chat] Failed to log Q&A:", err));
+    }
+
     return NextResponse.json({ reply });
   } catch (err) {
     console.error("[chat] error:", err);

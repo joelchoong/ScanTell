@@ -88,9 +88,12 @@ model UserQuestion {
   id         String   @id @default(cuid())
   userId     String
   question   String
+  answer     String?  // The AI-generated answer
+  source     String?  // "chat" | "scenario" | "custom"
+  aiModel    String?  // e.g. "gemini-2.5-flash" — useful when you swap models
   documentId String?
   createdAt  DateTime @default(now())
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 }

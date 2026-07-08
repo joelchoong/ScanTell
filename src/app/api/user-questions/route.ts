@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const { userId } = authResult;
 
   try {
-    const { question, documentId } = await req.json();
+    const { question, answer, source, documentId } = await req.json();
 
     if (!question) {
       return NextResponse.json({ error: "Question is required" }, { status: 400 });
@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         question,
+        answer: answer || null,
+        source: source || null,         // "chat" | "scenario" | "custom"
+        aiModel: "gemini-2.5-flash",
         documentId: documentId || null,
       },
     });
