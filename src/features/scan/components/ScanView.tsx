@@ -108,7 +108,31 @@ export function ScanView() {
       } else if (scenario === "hospitalised") {
         promptText = "I've been hospitalised. What is my room & board limit, co-payment, or daily benefit?";
       } else if (scenario === "custom") {
-        promptText = "Help me understand my policy's benefits.";
+        // Custom scenario — don't auto-send, just greet and wait for user input
+        if (documentId) {
+          fetch(`/api/documents`)
+            .then(res => res.json())
+            .then(data => {
+              const doc = data.documents?.find((d: DBDoc) => d.id === documentId);
+              const docName = doc ? doc.name : "your document";
+              setMessages([{
+                id: "system-greet",
+                role: "assistant",
+                content: `Hi! I've loaded "${docName}". Ask me anything about your policy — coverage, exclusions, what's covered in different situations, anything you'd like to know.`,
+                timestamp: new Date(),
+              }]);
+            })
+            .catch(() => {
+              setMessages([{
+                id: "system-greet",
+                role: "assistant",
+                content: `Hi! Ask me anything about your policy — coverage, exclusions, what's covered in different situations, anything you'd like to know.`,
+                timestamp: new Date(),
+              }]);
+            });
+        }
+        setHasInitializedScenario(true);
+        return;
       }
 
       if (promptText) {
