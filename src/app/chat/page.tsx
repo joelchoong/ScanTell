@@ -1,34 +1,52 @@
+"use client";
+
 import { ScanView } from "@/features/scan/components/ScanView";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { colors } from "@/lib/design-system";
 import Image from "next/image";
 import { Suspense } from "react";
 
+function ChatHeader() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const documentId = searchParams.get("documentId");
+
+  const handleBack = () => {
+    if (documentId) {
+      router.push(`/explore?id=${documentId}`);
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
+  return (
+    <div className="flex items-center px-6 py-4 sticky top-0 z-20">
+      <button
+        onClick={handleBack}
+        className="w-10 h-10 softui-card flex items-center justify-center"
+        aria-label="Back"
+      >
+        <ArrowLeft className="w-5 h-5 text-gray-700" />
+      </button>
+      <h1 className="flex-1 text-center text-lg font-semibold text-gray-900">Chat</h1>
+      <div className="w-10" />
+    </div>
+  );
+}
+
 export default function ScanPage() {
   return (
     <div className="text-gray-900 font-sans selection-bg-yellow-100 min-h-screen" style={{ background: colors.primary.gradientTransparent }}>
-      {/* S-curve pattern at top */}
       <div className="absolute top-0 left-0 right-0 w-full h-[40vh] z-0 pointer-events-none">
-        <Image
-          src="/wave-pattern.svg"
-          alt="S-curve pattern"
-          fill
-          className="object-cover"
-        />
+        <Image src="/wave-pattern.svg" alt="S-curve pattern" fill className="object-cover" />
       </div>
 
-      <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: 'transparent' }}>
-        {/* Header with back button */}
-        <div className="flex items-center px-6 py-4 sticky top-0 z-20">
-          <Link href="/dashboard" className="w-10 h-10 softui-card flex items-center justify-center">
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
-          </Link>
-          <h1 className="flex-1 text-center text-lg font-semibold text-gray-900">Chat</h1>
-          <div className="w-10"></div>
-        </div>
+      <div className="max-w-md mx-auto relative h-screen flex flex-col" style={{ background: "transparent" }}>
+        <Suspense fallback={<div className="h-16" />}>
+          <ChatHeader />
+        </Suspense>
 
-        {/* Chat content */}
         <div className="flex-1 overflow-y-auto page-transition">
           <Suspense fallback={
             <div className="flex flex-col items-center justify-center h-full gap-2">
