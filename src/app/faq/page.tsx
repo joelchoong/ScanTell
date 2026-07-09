@@ -9,27 +9,31 @@ import { colors } from "@/lib/design-system";
 const faqs = [
   {
     question: "What is ScanTell?",
-    answer: "ScanTell is a document scanning and management application that helps you digitize, organize, and access your documents from anywhere."
+    answer: "ScanTell lets you upload insurance documents and explore real-life scenarios based on your actual policy. Instead of reading through dense policy text, you can ask questions like 'What happens if I'm hospitalised?' and get plain-English answers directly from your document."
   },
   {
-    question: "How do I scan a document?",
-    answer: "You can scan documents by using your device's camera or uploading existing files. The app will automatically process and organize your documents."
+    question: "How do I upload a document?",
+    answer: "From the dashboard, tap 'Upload PDF Document'. Only PDF files are supported, up to 20MB. Once uploaded, ScanTell will analyse the document and generate relevant scenarios for you to explore."
   },
   {
     question: "Is my data secure?",
-    answer: "Yes, we take security seriously. Your documents are encrypted and stored securely. We use industry-standard security measures to protect your data."
+    answer: "Your documents are stored on Vercel Blob with encryption at rest and TLS in transit. Your data is scoped to your account — only you can access your documents. Note that document text is processed by Google Gemini to generate answers; Google's standard data handling policies apply."
   },
   {
     question: "Can I delete my account?",
-    answer: "Yes, you can delete your account at any time from the settings page. This will anonymize your personal information while retaining your document data for compliance purposes."
+    answer: "Yes. Go to Profile → Settings → Delete Account. This permanently removes your account and all associated documents."
   },
   {
     question: "How do I change my password?",
-    answer: "You can change your password from the settings page. Navigate to Settings → Change Password and follow the instructions."
+    answer: "Go to Profile → Settings → Change Password and follow the steps there."
   },
   {
     question: "What file formats are supported?",
-    answer: "We support various file formats including PDF, JPG, PNG, and more. Check the upload section for the complete list of supported formats."
+    answer: "Currently PDF only, up to 20MB per file. Support for additional formats may be added in future."
+  },
+  {
+    question: "Why does my document say 'Not an insurance document'?",
+    answer: "ScanTell is designed specifically for insurance policies. If you upload a different type of document (invoices, contracts, etc.), the AI will flag it. Try uploading an insurance policy document to explore scenarios."
   }
 ];
 
