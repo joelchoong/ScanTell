@@ -24,6 +24,7 @@ model User {
   documents                 Document[]
   sessions                  Session[]
   userQuestions             UserQuestion[]
+  feedback                  Feedback[]
 }
 
 model Account {
@@ -95,4 +96,15 @@ model UserQuestion {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  userId     String?
+  message    String
+  page       String
+  likelihood Int?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

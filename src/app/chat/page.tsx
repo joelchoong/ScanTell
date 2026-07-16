@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { colors } from "@/lib/design-system";
 import Image from "next/image";
 import { Suspense } from "react";
+import FeedbackWidget from "@/features/feedback/components/FeedbackWidget";
 
 function ChatHeader() {
   const router = useRouter();
@@ -57,6 +58,9 @@ export default function ScanPage() {
             <ScanView />
           </Suspense>
         </div>
+
+        {/* Feedback Widget */}
+        <FeedbackWidget page="chat" />
       </div>
     </div>
   );

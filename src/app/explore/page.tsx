@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNav } from "@/features/navigation/components/BottomNav";
 import { colors, typography } from "@/lib/design-system";
 import AnswerRenderer from "@/features/explore/components/AnswerRenderer";
+import FeedbackWidget from "@/features/feedback/components/FeedbackWidget";
 import { Upload, FileText, ChevronDown, Eye, Loader2, Cpu, Timeline, ChevronRight, Stethoscope, Heart, Brain, Building2, Plus, AlertCircle, X, ChevronUp, Activity, AlertTriangle, Pill, User, Smile, Scissors, Leaf, Globe, Plane, Clock, MapPin, TrendingUp, MoreVertical, Pencil, RefreshCw, ArrowLeft, Shield, Info } from "lucide-react";
 import Image from "next/image";
 
@@ -852,6 +853,9 @@ export default function ExplorePage() {
           </div>
         </div>
       )}
+
+      {/* Feedback Widget */}
+      <FeedbackWidget page="explore" />
     </div>
   );
 }

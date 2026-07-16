@@ -2,6 +2,7 @@ import Link from "next/link";
 import { colors, typography } from "@/lib/design-system";
 import { FileText, Shield, Sparkles, ArrowRight, Upload, CheckCircle, Zap, Lock } from "lucide-react";
 import Image from "next/image";
+import FeedbackWidget from "@/features/feedback/components/FeedbackWidget";
 
 export default function LandingPage() {
   return (
@@ -207,6 +208,9 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* Feedback Widget */}
+      <FeedbackWidget page="landing" />
 
       {/* Footer */}
       <footer className="border-t border-gray-200 py-8">

@@ -1,5 +1,6 @@
 import { HeroCard } from "./HeroCard";
 import { UploadedDocuments } from "./UploadedDocuments";
+import FeedbackWidget from "@/features/feedback/components/FeedbackWidget";
 
 export function DashboardView() {
   return (
@@ -10,6 +11,9 @@ export function DashboardView() {
       <div className="px-6">
         <UploadedDocuments />
       </div>
+
+      {/* Feedback Widget */}
+      <FeedbackWidget page="dashboard" />
     </div>
   );
 }
