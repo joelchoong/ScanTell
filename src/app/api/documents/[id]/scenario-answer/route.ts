@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/shared/server/db";
 import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(
   req: NextRequest,
@@ -11,6 +12,22 @@ export async function POST(
   const { userId } = authResult;
 
   const { id } = await params;
+
+  // Rate limiting: 15 requests per minute per IP
+  const ip = getClientIp(req);
+  const { success } = await rateLimit({
+    identifier: `scenario-answer:${ip}`,
+    limit: 15,
+    window: 60 * 1000,
+  });
+
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const { query, scenarioId } = await req.json();
 
   if (!query) {
@@ -91,8 +108,6 @@ ${contextText}
 
 Question:
 ${query}`;
-
-      console.log(`[scenario-answer] Generating dynamic answer using Gemini for document ${id}...`);
 
       const geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,

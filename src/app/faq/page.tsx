@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     question: "How do I upload a document?",
-    answer: "From the dashboard, tap 'Upload PDF Document'. Only PDF files are supported, up to 20MB. Once uploaded, ScanTell will analyse the document and generate relevant scenarios for you to explore."
+    answer: "From the dashboard, tap 'Upload PDF Document'. Only PDF files are supported, up to 5MB. Once uploaded, ScanTell will analyse the document and generate relevant scenarios for you to explore."
   },
   {
     question: "Is my data secure?",
@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     question: "What file formats are supported?",
-    answer: "Currently PDF only, up to 20MB per file. Support for additional formats may be added in future."
+    answer: "Currently PDF only, up to 5MB per file. Support for additional formats may be added in future."
   },
   {
     question: "Why does my document say 'Not an insurance document'?",

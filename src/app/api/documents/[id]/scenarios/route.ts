@@ -13,18 +13,28 @@ export async function GET(
   const { id } = await params;
 
   try {
-    console.log("[documents/scenarios] Fetching scenarios for document:", id);
+    // Ensure the document exists and belongs to the user
+    const doc = await prisma.document.findFirst({
+      where: { id, userId },
+    });
 
-    // Simply return top 4 insurance scenarios
+    if (!doc) {
+      return NextResponse.json(
+        { error: "Document not found or unauthorized access." },
+        { status: 404 }
+      );
+    }
+
+    const docType = doc.isInsuranceDocument ? "insurance" : "general";
+
+    // Query scenarios scoped to the document's type
     const scenarios = await prisma.$queryRaw`
       SELECT id, title, icon, query, description, "documentTypes", "usageCount"
       FROM "Scenario"
-      WHERE "documentTypes" @> ARRAY['insurance']::text[]
+      WHERE "documentTypes" @> ARRAY[${docType}]::text[]
       ORDER BY "usageCount" DESC
       LIMIT 4
     `;
-
-    console.log("[documents/scenarios] Retrieved scenarios:", scenarios);
 
     return NextResponse.json({ scenarios });
   } catch (err) {

@@ -2,9 +2,9 @@
 // This ensures all required environment variables are set at startup
 
 const requiredEnvVars = {
-  RESEND_API_KEY: process.env.RESEND_API_KEY,
-  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
   DATABASE_URL: process.env.DATABASE_URL,
+  BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 } as const;
 
 const optionalEnvVars = {
@@ -14,7 +14,8 @@ const optionalEnvVars = {
   // Google OAuth — optional until the feature is implemented
   AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
   AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 } as const;
 
 function validateEnv() {

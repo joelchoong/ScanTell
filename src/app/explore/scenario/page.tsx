@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { colors, typography } from "@/lib/design-system";
 import AnswerRenderer from "@/features/explore/components/AnswerRenderer";
+import { BottomNav } from "@/features/navigation/components/BottomNav";
 import {
   ChevronLeft,
   Loader2,
@@ -151,7 +152,11 @@ function ScenarioContent() {
   }, [id, documentId]);
 
   const handleBack = () => {
-    router.push(`/explore?id=${documentId}`);
+    if (documentId) {
+      router.push(`/explore?id=${documentId}`);
+    } else {
+      router.push('/explore');
+    }
   };
 
   const IconComponent = scenario ? getIcon(scenario.icon) : FileText;
@@ -262,6 +267,8 @@ function ScenarioContent() {
             </div>
           )}
         </main>
+
+        <BottomNav />
       </div>
     </div>
   );

@@ -7,6 +7,8 @@ const protectedRoutes = ["/dashboard", "/chat", "/explore", "/profile"];
 // Routes only for unauthenticated users
 const authRoutes = ["/login", "/verify-request", "/auth-error"];
 
+export const runtime = "nodejs";
+
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;

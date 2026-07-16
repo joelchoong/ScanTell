@@ -35,19 +35,14 @@ const commonInsuranceScenarios = [
 ];
 
 export async function POST(req: NextRequest) {
-  // Temporarily disable auth for seeding
-  // const authResult = await requireAuthApi();
-  // if (authResult instanceof NextResponse) return authResult;
+  const authResult = await requireAuthApi();
+  if (authResult instanceof NextResponse) return authResult;
 
   try {
-    console.log("Seeding scenarios using raw SQL...");
-
     // Delete existing scenarios first
-    console.log("Deleting existing scenarios...");
     await prisma.$executeRaw`DELETE FROM "Scenario"`;
 
     for (const scenario of commonInsuranceScenarios) {
-      console.log("Inserting scenario:", scenario.title);
       await prisma.$executeRaw`
         INSERT INTO "Scenario" (id, title, icon, query, description, "documentTypes", "usageCount", "createdAt", "updatedAt")
         VALUES (
@@ -63,8 +58,6 @@ export async function POST(req: NextRequest) {
         )
       `;
     }
-
-    console.log("Scenarios seeded successfully!");
 
     return NextResponse.json({ message: "Scenarios seeded successfully" });
   } catch (error) {

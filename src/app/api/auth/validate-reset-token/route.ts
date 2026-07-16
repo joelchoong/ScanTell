@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/shared/server/db";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  // Rate limiting: 10 requests per minute per IP
+  const ip = getClientIp(req);
+  const { success } = await rateLimit({
+    identifier: `validate-reset-token:${ip}`,
+    limit: 10,
+    window: 60 * 1000,
+  });
+
+  if (!success) {
+    return NextResponse.json(
+      { valid: false, error: "Too many requests. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const { token } = await req.json();
 

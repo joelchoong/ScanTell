@@ -59,13 +59,19 @@ export async function POST(req: NextRequest) {
     invalidateUserCache(userId);
 
     // Send verification email
-    const baseUrl = req.headers.get('host') ? `https://${req.headers.get('host')}` : 'http://localhost:3000';
+    const proto = req.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = req.headers.get('host') ? `${proto}://${req.headers.get('host')}` : 'http://localhost:3000';
     const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+
+    if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) {
+      console.log(`\n[DEV ONLY] Resend not configured. Update Email Verification URL: ${verificationUrl}\n`);
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
 
     const resend = new Resend(env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from: env.RESEND_FROM_EMAIL!,
+      from: env.RESEND_FROM_EMAIL,
       to: email.toLowerCase(),
       subject: "Verify your new ScanTell email",
       template: {

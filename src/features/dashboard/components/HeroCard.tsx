@@ -39,9 +39,9 @@ function HeroCardComponent() {
       return;
     }
 
-    // Client-side size check (20MB)
-    if (file.size > 20 * 1024 * 1024) {
-      setToast({ message: "File must be under 20MB.", type: "error" });
+    // Client-side size check (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ message: "File must be under 5MB.", type: "error" });
       return;
     }
 

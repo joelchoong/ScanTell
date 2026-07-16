@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/shared/server/db";
 import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   const authResult = await requireAuthApi();
@@ -8,11 +9,29 @@ export async function POST(req: NextRequest) {
   const { userId } = authResult;
 
   try {
-    const { messages, documentId } = await req.json();
+    const { messages: rawMessages, documentId } = await req.json();
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!rawMessages || !Array.isArray(rawMessages)) {
       return NextResponse.json({ error: "Messages array is required." }, { status: 400 });
     }
+
+    // Rate limiting: 20 requests per minute per IP
+    const ip = getClientIp(req);
+    const { success } = await rateLimit({
+      identifier: `chat:${ip}`,
+      limit: 20,
+      window: 60 * 1000,
+    });
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
+    // Truncate to the most recent 20 messages to avoid token limit issues
+    const messages = rawMessages.slice(-20);
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -24,7 +43,6 @@ export async function POST(req: NextRequest) {
 
     // 1. If a documentId is provided, retrieve its extracted text
     let systemInstruction = "You are an expert insurance assistant. Help the user understand their policy options in a clear, friendly, and structured manner.";
-    let documentName = "";
 
     if (documentId) {
       const doc = await prisma.document.findFirst({
@@ -32,7 +50,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (doc && doc.extractedText) {
-        documentName = doc.name;
         systemInstruction = `You are a friendly, helpful insurance assistant. You're having a casual conversation with someone who wants to understand their insurance policy.
 
 Your personality:

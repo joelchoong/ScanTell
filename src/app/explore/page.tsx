@@ -138,14 +138,12 @@ export default function ExplorePage() {
   };
 
   const runAnalysis = async (docId: string) => {
-    console.log("runAnalysis called for docId:", docId);
     setIsProcessing(true);
     setProcessingError(null);
     try {
       const res = await fetch(`/api/documents/${docId}/analyze`, {
         method: "POST"
       });
-      console.log("Analysis response status:", res.status);
       if (!res.ok) {
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
@@ -162,12 +160,8 @@ export default function ExplorePage() {
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const data = await res.json();
-        console.log("Analysis response data:", data);
-        console.log("Analysis response scenarios:", data.scenarios);
-        console.log("Analysis response scenarios length:", data.scenarios?.length);
         setSelectedDoc(data.document);
         setScenarios(data.scenarios || []);
-        console.log("Scenarios set from analysis:", data.scenarios || []);
         setDocuments(prev => prev.map(d => d.id === docId ? data.document : d));
       } else {
         const text = await res.text();
@@ -258,7 +252,6 @@ export default function ExplorePage() {
   };
 
   const handleSelectDocument = async (doc: DBDocument) => {
-    console.log("handleSelectDocument called with doc:", doc);
     setSelectedDoc(doc);
     setCustomFileName(doc.name);
     setShowDropdown(false);
@@ -267,19 +260,14 @@ export default function ExplorePage() {
 
     // If not yet analyzed, analyze now
     if (!doc.extractedText) {
-      console.log("Document not analyzed, running analysis");
       await runAnalysis(doc.id);
     } else {
       // Load scenarios for already analyzed documents
       try {
-        console.log("Loading scenarios for document:", doc.id);
         const res = await fetch(`/api/documents/${doc.id}/scenarios`);
-        console.log("Scenarios response status:", res.status);
         if (res.ok) {
           const data = await res.json();
-          console.log("Scenarios data:", data);
           setScenarios(data.scenarios || []);
-          console.log("Scenarios state set to:", data.scenarios || []);
         } else {
           console.error("Failed to load scenarios, re-analyzing document");
           // If scenarios endpoint fails, re-analyze the document
@@ -631,12 +619,20 @@ export default function ExplorePage() {
                     <p className="text-orange-900 font-semibold">Unable to analyze document</p>
                     <p className="text-orange-700 text-xs mt-1">{processingError}</p>
                   </div>
-                  <button
-                    onClick={handleClearFile}
-                    className="softui-btn px-4 py-2 text-xs"
-                  >
-                    Upload Insurance Document
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => runAnalysis(selectedDoc.id)}
+                      className="softui-btn px-4 py-2 text-xs"
+                    >
+                      Retry
+                    </button>
+                    <button
+                      onClick={handleClearFile}
+                      className="softui-btn px-4 py-2 text-xs"
+                    >
+                      Upload Different Document
+                    </button>
+                  </div>
                 </section>
               )}
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/shared/server/db";
 import { requireAuthApi } from "@/features/auth/server/getAuthenticatedUser";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 function getMimeType(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
@@ -21,6 +22,28 @@ export async function POST(
 
   const { id } = await params;
 
+  // Rate limiting: 10 requests per minute per IP
+  const ip = getClientIp(req);
+  const { success, remaining, resetTime } = await rateLimit({
+    identifier: `analyze:${ip}`,
+    limit: 10,
+    window: 60 * 1000,
+  });
+
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "X-RateLimit-Limit": "10",
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": new Date(resetTime).toISOString(),
+        },
+      }
+    );
+  }
+
   try {
     // 1. Fetch document metadata
     const doc = await prisma.document.findFirst({
@@ -35,16 +58,15 @@ export async function POST(
     if (doc.analysis && doc.extractedText) {
       let scenarios: any[] = [];
 
-      if (doc.isInsuranceDocument) {
-        const rawScenarios = await prisma.$queryRaw`
-          SELECT id, title, icon, query, description, "documentTypes", "usageCount"
-          FROM "Scenario"
-          WHERE "documentTypes" @> ARRAY['insurance']::text[]
-          ORDER BY "usageCount" DESC
-          LIMIT 4
-        `;
-        scenarios = rawScenarios as any[];
-      }
+      const docType = doc.isInsuranceDocument ? "insurance" : "general";
+      const rawScenarios = await prisma.$queryRaw`
+        SELECT id, title, icon, query, description, "documentTypes", "usageCount"
+        FROM "Scenario"
+        WHERE "documentTypes" @> ARRAY[${docType}]::text[]
+        ORDER BY "usageCount" DESC
+        LIMIT 4
+      `;
+      scenarios = rawScenarios as any[];
 
       return NextResponse.json({ document: doc, scenarios });
     }
@@ -196,18 +218,17 @@ export async function POST(
     let scenarios: any[] = [];
     let scenarioIds: string[] = [];
 
-    if (parsedData.isInsuranceDocument) {
-      const rawScenarios = await prisma.$queryRaw`
-        SELECT id, title, icon, query, description, "documentTypes", "usageCount"
-        FROM "Scenario"
-        WHERE "documentTypes" @> ARRAY['insurance']::text[]
-        ORDER BY "usageCount" DESC
-        LIMIT 4
-      `;
+    const docType = parsedData.isInsuranceDocument ? "insurance" : "general";
+    const rawScenarios = await prisma.$queryRaw`
+      SELECT id, title, icon, query, description, "documentTypes", "usageCount"
+      FROM "Scenario"
+      WHERE "documentTypes" @> ARRAY[${docType}]::text[]
+      ORDER BY "usageCount" DESC
+      LIMIT 4
+    `;
 
-      scenarios = rawScenarios as any[];
-      scenarioIds = scenarios.map((s) => s.id);
-    }
+    scenarios = rawScenarios as any[];
+    scenarioIds = scenarios.map((s) => s.id);
 
     await prisma.$executeRaw`
       UPDATE "Document"
@@ -218,7 +239,7 @@ export async function POST(
     // 8. SINGLE Gemini call for ALL scenario answers
     let scenarioAnswers: Record<string, string> = {};
 
-    if (parsedData.isInsuranceDocument && scenarios.length > 0) {
+    if (scenarios.length > 0) {
       const contextText = parsedData.extractedText || JSON.stringify(parsedData.analysis, null, 2);
       const batchPrompt = `You are an insurance policy analyst. Respond ONLY with valid JSON — no markdown, no prose, no code fences.
 
