@@ -14,45 +14,50 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ScanTell – Understand Your Documents Instantly",
+  title: "ScanTell – Understand Your Documents with AI",
+
   description:
-    "ScanTell uses OCR and AI to extract, summarise, and explain important information from your documents. Start with insurance policies and quickly understand what matters most without reading the full document.",
+    "ScanTell uses AI and OCR to help you understand important documents faster. Upload insurance policies and paperwork to discover key details, answers, and questions you should be asking.",
 
   keywords: [
-    "OCR app",
-    "document scanner",
-    "insurance document scanner",
-    "AI document summarizer",
-    "policy explanation",
-    "document AI",
-    "scan and extract text",
-    "insurance clarity app",
+    "AI document assistant",
+    "document understanding AI",
+    "insurance policy assistant",
+    "AI OCR",
+    "document summarizer",
+    "insurance document analysis",
+    "personal document assistant",
   ],
 
   authors: [{ name: "ScanTell" }],
 
   openGraph: {
-    title: "ScanTell – Understand Your Documents Instantly",
+    title: "ScanTell – Understand Your Documents with AI",
     description:
-      "Upload documents and instantly get key insights, summaries, and explanations. Built for insurance policies and important paperwork.",
+      "Stop searching through pages of documents. ScanTell uses AI to explain important information, answer questions, and highlight details you might miss.",
+
     url: "https://scantell.vercel.app",
     siteName: "ScanTell",
     type: "website",
+
     images: [
       {
         url: "/scantell-logo-horizontal.png",
         width: 1200,
         height: 630,
-        alt: "ScanTell - Document understanding made simple",
+        alt: "ScanTell - AI document understanding assistant",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "ScanTell – Understand Your Documents Instantly",
+
+    title: "ScanTell – Understand Your Documents with AI",
+
     description:
-      "AI-powered OCR that extracts and explains key info from insurance and important documents.",
+      "Upload documents and let AI explain important details, answer questions, and highlight what matters most.",
+
     images: ["/scantell-logo-horizontal.png"],
   },
 
