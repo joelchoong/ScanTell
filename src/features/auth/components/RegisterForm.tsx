@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { GoogleSignIn } from "./GoogleSignIn";
 import { colors } from "@/lib/design-system";
 import { validateEmail, validateName, validatePassword } from "@/lib/validation";
 import { Toast, ToastType } from "@/shared/components/Toast";
@@ -174,6 +175,14 @@ export function RegisterForm() {
             {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400">Or Continue with</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        <GoogleSignIn callbackUrl="/dashboard" />
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{" "}
