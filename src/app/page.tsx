@@ -218,6 +218,7 @@ export default function LandingPage() {
           <p>© 2026 ScanTell by Innovia AI Technologies. All rights reserved.</p>
           <div className="flex justify-center gap-6 mt-4">
             <Link href="/privacy" className="hover:text-gray-900">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-gray-900">Terms & Conditions</Link>
             <Link href="/faq" className="hover:text-gray-900">FAQ</Link>
           </div>
         </div>

@@ -20,6 +20,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -41,8 +42,13 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Mark all fields touched to show all errors on submit attempt
-    setTouched({ name: true, email: true, password: true });
-    if (hasErrors) return;
+    setTouched({ name: true, email: true, password: true, acceptedTerms: true });
+    if (hasErrors || !acceptedTerms) {
+      if (!acceptedTerms) {
+        setToast({ message: "Please accept the Terms & Conditions.", type: "error" });
+      }
+      return;
+    }
 
     setLoading(true);
     try {
@@ -157,14 +163,25 @@ export function RegisterForm() {
           </div>
 
           {/* Terms */}
-          <p className="text-xs text-gray-400 text-center px-2">
-            By signing up, you agree to our{" "}
-            <span className="font-semibold" style={{ color: colors.primary.dark }}>Terms &amp; Conditions</span>
-            {" "}and{" "}
-            <Link href="/privacy" className="font-semibold hover:underline" style={{ color: colors.primary.dark }}>
-              Privacy Policy
-            </Link>
-          </p>
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="terms"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500"
+            />
+            <label htmlFor="terms" className="text-xs text-gray-400 flex-1">
+              I agree to the{" "}
+              <Link href="/terms" className="font-semibold hover:underline" style={{ color: colors.primary.dark }}>
+                Terms & Conditions
+              </Link>
+              {" "}and{" "}
+              <Link href="/privacy" className="font-semibold hover:underline" style={{ color: colors.primary.dark }}>
+                Privacy Policy
+              </Link>
+            </label>
+          </div>
 
           <button
             type="submit"
